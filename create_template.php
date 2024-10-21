@@ -182,24 +182,52 @@ class local_setcheck_assign_template_form extends moodleform {
         // Dynamically load the existing assignment form via reflection.
         $templatehtmlids = []; // Array to store HTML IDs.
 
+        // Add a collapsible section for Template Settings.
+        $mform->addElement('header', 'templatesettings', get_string('template_settings', 'local_setcheck'));
+        $mform->setExpanded('templatesettings', true);
+
         // Add the template name field.
         $templatenameelement = $mform->addElement('text', 'template_name', get_string('template_name', 'local_setcheck'));
         $mform->setType('template_name', PARAM_TEXT);
         $mform->addRule('template_name', get_string('required', 'local_setcheck'), 'required', null, 'server');
         $mform->setDefault('template_name', '');
 
+        // Add the template description field.
+        $templatedescriptionelement = $mform->addElement(
+            'editor', 'template_description',
+            get_string('template_description', 'local_setcheck')
+        );
+        $mform->setType('template_description', PARAM_RAW);
+        $mform->setDefault('template_description', '');
+
         // Save the HTML ID of the 'template_name' field.
         $templatehtmlids['template_name'] = $templatenameelement->getAttribute('id');
+        $templatehtmlids['template_description'] = $templatedescriptionelement->getAttribute('id');
 
         // Add assignment form fields dynamically and store their HTML IDs.
         $this->add_assign_form_fields($mform, $templatehtmlids);
         $this->remove_unwanted_elements($mform);
 
-        $mform->addElement('button', 'save_template_button', get_string('save_template', 'local_setcheck'));
+        // Add a button array to the form (Save and Cancel buttons).
+        $buttonarray = [];
+        $buttonarray[] = $mform->createElement(
+            'button',
+            'save_template_button',
+            get_string('save_template',
+            'local_setcheck')
+        );
+        $buttonarray[] = $mform->createElement(
+            'cancel',
+            'cancel_template_button',
+            get_string('cancel')
+        );
 
-        // Store HTML IDs in a hidden field to be processed during form submission.
-        $mform->addElement('hidden', 'template_html_ids', json_encode($templatehtmlids));
+        // Add the group of buttons to the form.
+        $mform->addGroup($buttonarray, 'buttonar', '', ' ', false);
         $mform->setType('template_html_ids', PARAM_RAW);
+
+        $mform->closeHeaderBefore('buttonar');
+
     }
 
     /**
@@ -214,17 +242,46 @@ class local_setcheck_assign_template_form extends moodleform {
             'general',
             'name',         // Assignment name.
             'intro',        // Introduction/Description.
+            'introattachments', // Attachments.
+            'submissionattachments', // Attachments.
             'pageheader',   // Page header (if applicable).
             'introeditor',  // Intro editor if present.
             'showdescription',
             'activityeditor',
-            'introattachments',
             'competenciessection',
             'tagshdr',
             'tags',
             'buttonar',
-            'coursecontentnotification',
+            'competenciessection',
+            'competencies',
+            'competency_rule',
+            'override_grade',
+            'restrictgroupbutton',
+            'availabilityconditionsheader',
+            'availabilityconditionsjson',
             '_qf__mod_assign_mod_form',
+            'modstandardelshdr',
+            'visible',
+            'cmidnumber',
+            'lang',
+            'groupmode',
+            'groupingid',
+            'restrictgroupbutton',
+            'availabilityconditionsheader',
+            'availabilityconditionsjson',
+            'course',
+            'coursemodule',
+            'section',
+            'module',
+            'modulename',
+            'instance',
+            'add',
+            'update',
+            'return',
+            'sr',
+            'beforemod',
+            'showonly',
+            'coursecontentnotification',
         ];
 
         // Iterate over each element name and remove it if it exists.
@@ -278,8 +335,9 @@ class local_setcheck_assign_template_form extends moodleform {
         $mform->setType('assignsubmission_onlinetext_wordlimit', PARAM_INT);
 
         foreach ($originalform->_elements as $element) {
-            $mform->addElement($element);
             $elementname = $element->getName();
+            $mform->addElement($element);
+            // echo $elementname . "<br>";
 
             $mform->setType($elementname, PARAM_RAW);
         }
@@ -310,7 +368,7 @@ $PAGE->set_cm($cm, $course); // Ensure the course matches the course module.
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('create_template', 'local_setcheck'));
 $PAGE->set_heading(get_string('create_template', 'local_setcheck'));
-$PAGE->add_body_class('create-template-page');
+$PAGE->add_body_class('create-template-page limitedwidth');
 $PAGE->requires->css('/local/setcheck/styles.css');
 $PAGE->requires->js_call_amd('local_setcheck/track_form_changes', 'init');
 

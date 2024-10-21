@@ -3,3 +3,26 @@ body.create-template-page .secondary-navigation,
 body.create-template-page .activity-header {
     display: none !important;
 }
+
+#id_action_buttons {
+    display: flex;
+    gap: 10px; /* Add some spacing between the buttons */
+    justify-content: flex-start; /* Align the buttons to the left (or use 'center' or 'flex-end' for other alignment) */
+}
+
+#id_save_template_button {
+    color: #fff; /* Ensure text color is white */
+    background-color: #0073e6; /* Default Moodle blue */
+    border-color: #0073e6;
+}
+
+#id_cancel_template_button {
+    color: #000; /* Ensure text color is white */
+    background-color: #ced4da; /* Gray color for secondary buttons */
+    border-color: #ced4da;
+}
+
+#availabilityconditions-loading {
+    display: none !important;
+}
+
