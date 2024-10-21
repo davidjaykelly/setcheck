@@ -1,0 +1,5 @@
+body.create-template-page #page-header,
+body.create-template-page .secondary-navigation,
+body.create-template-page .activity-header {
+    display: none !important;
+}
