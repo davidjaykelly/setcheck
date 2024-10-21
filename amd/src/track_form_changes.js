@@ -3,7 +3,8 @@ define(['jquery', "core/ajax"], function($) {
         init: function() {
             const formElements = $('#create_template_form input, #create_template_form select, #create_template_form textarea');
             const form = $('#create_template_form');
-            const submitButton = form.find('button[name="save_template_button"]');
+            const saveButton = form.find('#id_save_template_button'); // Update this to the correct ID
+            const cancelButton = form.find('#id_cancel_template_button'); // Cancel button
 
             // Iterate over each form element to add an event listener for changes.
             formElements.each(function() {
@@ -19,8 +20,8 @@ define(['jquery', "core/ajax"], function($) {
                 }
             });
 
-            // Handle form submission
-            submitButton.on('click', function(event) {
+            // Handle save button click (prevent the default form submission).
+            saveButton.on('click', function(event) {
                 event.preventDefault(); // Prevent the default form submission
 
                 // Gather only touched elements
@@ -36,7 +37,6 @@ define(['jquery', "core/ajax"], function($) {
 
                 // Also add template_name and any other essential values
                 formData['template_name'] = form.find('input[name="template_name"]').val();
-                console.log(formData);
 
                 // Submit the form data using AJAX
                 $.ajax({
@@ -66,9 +66,15 @@ define(['jquery', "core/ajax"], function($) {
                 });
             });
 
+            // Handle cancel button click.
+            cancelButton.on('click', function(event) {
+                event.preventDefault(); // Prevent the default action
+                window.location.href = M.cfg.wwwroot + '/local/setcheck/manage_templates.php';
+            });
+
             /**
-            * @param {jQuery} element The element to mark as touched.
-            */
+             * @param {jQuery} element The element to mark as touched.
+             */
             function markTouched(element) {
                 element.attr('data-touched', 'true');
             }
