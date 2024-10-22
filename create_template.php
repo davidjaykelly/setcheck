@@ -32,6 +32,10 @@ require_once($CFG->dirroot . '/course/modlib.php'); // Include modlib to get add
 require_once($CFG->dirroot . '/mod/assign/mod_form.php'); // Include the assignment form.
 require_once($CFG->libdir . '/formslib.php'); // Include Moodle form library.
 
+// Parameters for determining context visibility (category or course).
+$categoryid = optional_param('categoryid', 0, PARAM_INT);
+$contextlevel = optional_param('contextlevel', 'course', PARAM_ALPHA);
+
 // First, check if course and assignment exist in plugin config.
 $courseid = get_config('local_setcheck', 'courseid');
 $assignmentid = get_config('local_setcheck', 'assignmentid');
@@ -337,7 +341,6 @@ class local_setcheck_assign_template_form extends moodleform {
         foreach ($originalform->_elements as $element) {
             $elementname = $element->getName();
             $mform->addElement($element);
-            // echo $elementname . "<br>";
 
             $mform->setType($elementname, PARAM_RAW);
         }
@@ -370,7 +373,7 @@ $PAGE->set_title(get_string('create_template', 'local_setcheck'));
 $PAGE->set_heading(get_string('create_template', 'local_setcheck'));
 $PAGE->add_body_class('create-template-page limitedwidth');
 $PAGE->requires->css('/local/setcheck/styles.css');
-$PAGE->requires->js_call_amd('local_setcheck/track_form_changes', 'init');
+$PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
 
 require_login();
 require_capability('moodle/site:config', $context); // Ensure user has admin rights.

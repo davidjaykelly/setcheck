@@ -67,3 +67,6 @@ $string['html_id'] = 'HTML ID';
 $string['no_settings_found'] = 'No settings found for this template.';
 $string['back_to_templates'] = 'Back to Manage Templates';
 $string['template_settings'] = 'Template Settings';
+$string['create_template'] = 'Create Template';
+$string['create_template_course'] = 'Create Template for Course';
+$string['create_template_category'] = 'Create Template for Category';

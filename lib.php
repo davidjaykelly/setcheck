@@ -75,3 +75,28 @@ function local_setcheck_coursemodule_edit_post_actions($data) {
 
     return $data;
 }
+
+/**
+ * Extends the secondary navigation for categories.
+ *
+ * @param navigation_node $parentnode The parent node where the new link will be added.
+ */
+function local_setcheck_extend_navigation_category_settings($navigation, $coursecategorycontext) {
+    $title = get_string('create_template', 'local_setcheck');
+    $categoryid = $coursecategorycontext->instanceid; // This will give the actual category ID.
+    $path = new moodle_url("/local/setcheck/create_template.php", [
+        'pagecontextid' => $coursecategorycontext->id,
+        'categoryid' => $categoryid,
+        'contextlevel' => 'category',
+    ]);
+    $settingsnode = navigation_node::create($title,
+                                            $path,
+                                            navigation_node::TYPE_SETTING,
+                                            null,
+                                            'setcheckcreatetemplate',
+                                            new pix_icon('i/settings', ''));
+    if (isset($settingsnode)) {
+        $settingsnode->set_force_into_more_menu(true);
+        $navigation->add_node($settingsnode);
+    }
+}
