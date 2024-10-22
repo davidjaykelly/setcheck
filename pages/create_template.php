@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require_once(dirname(__DIR__, 3) . '/config.php');
 require_once($CFG->dirroot . '/mod/assign/mod_form.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/accesslib.php');
@@ -137,7 +137,7 @@ if (!$courseid || !$assignmentid) {
         // If the course module is broken or missing, reset the config.
         set_config('courseid', null, 'local_setcheck');
         set_config('assignmentid', null, 'local_setcheck');
-        redirect(new moodle_url('/local/setcheck/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
+        redirect(new moodle_url('/local/setcheck/pages/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
     }
 
     $cmid = $cm->id; // Use the existing course module ID.
@@ -358,7 +358,7 @@ if (!$cm) {
     // If the course module is broken or missing, reset the config.
     set_config('courseid', null, 'local_setcheck');
     set_config('assignmentid', null, 'local_setcheck');
-    redirect(new moodle_url('/local/setcheck/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
+    redirect(new moodle_url('/local/setcheck/pages/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
 }
 
 $cmid = $cm->id; // Use the existing course module ID.
@@ -373,13 +373,13 @@ if (!empty($cm)) {
 }
 
 // Set up the page context and title.
-$PAGE->set_url('/local/setcheck/create_template.php');
+$PAGE->set_url('/local/setcheck/pages/create_template.php');
 $PAGE->set_cm($cm, $course); // Ensure the course matches the course module.
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('create_template', 'local_setcheck'));
 $PAGE->set_heading(get_string('create_template', 'local_setcheck'));
 $PAGE->add_body_class('create-template-page limitedwidth');
-$PAGE->requires->css('/local/setcheck/styles.css');
+$PAGE->requires->css('/local/setcheck/styles/styles.css');
 $PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
 
 require_login();
@@ -387,7 +387,7 @@ require_capability('moodle/site:config', $context); // Ensure user has admin rig
 
 
 // Set the action URL for the form.
-$actionurl = new moodle_url('/local/setcheck/create_template.php');
+$actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
 
 // Create the form with the required arguments.
 $mform = new local_setcheck_assign_template_form($actionurl, $cm, $courseid);
@@ -439,7 +439,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $DB->insert_record('local_setcheck_templates', $template);
 
         // Use Moodle's moodle_url to generate the redirect URL.
-        $redirecturl = new moodle_url('/local/setcheck/manage_templates.php');
+        $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php');
 
         // Return a JSON response with the redirect URL.
         echo json_encode(['redirect' => $redirecturl->out(false)]);

@@ -15,12 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * UPDATE
+ *
+ * Hooks related to the assignment form.
  *
  * @package    local_setcheck
  * @copyright  2024 David Kelly
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+use local_setcheck\services\TemplateService;
+
 
 /**
  * Hook to add template selection to the assignment settings form.
@@ -38,8 +42,8 @@ function local_setcheck_assignment_form_hook($mform) {
     // Get all templates.
     $course = $DB->get_record('course', ['id' => $PAGE->course->id]);
     $categoryid = $course->category;
-    $templatescat = \local_setcheck\setcheck::get_templates_for_category($course, $categoryid);
-    $templatescourse = \local_setcheck\setcheck::get_templates_for_course($PAGE->course->id);
+    $templatescat = TemplateService::get_templates_for_category($course, $categoryid);
+    $templatescourse = TemplateService::get_templates_for_course($PAGE->course->id);
 
     $templateoptions = array_merge($templatescat, $templatescourse);
 
@@ -77,18 +81,5 @@ function local_setcheck_assignment_form_hook($mform) {
  * @throws dml_exception If an error occurs while accessing the database
  */
 function local_setcheck_assignment_form_submit($data) {
-    if (!empty($data->apply_setcheck_template) && !empty($data->setcheck_template)) {
-        $templateid = $data->setcheck_template;
-        $assignmentid = $data->instance;
-
-        // Apply the selected template to the current assignment.
-        $result = \local_setcheck\setcheck::apply_template($templateid, $assignmentid);
-
-        // Provide feedback to the user about the success or failure of template application.
-        if (isset($result['success'])) {
-            \core\notification::success(get_string('template_applied_success', 'local_setcheck'));
-        } else if (isset($result['error'])) {
-            \core\notification::error(get_string('template_applied_error', 'local_setcheck'));
-        }
-    }
+    exit;
 }

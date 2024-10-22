@@ -72,7 +72,7 @@ define(['jquery', "core/ajax"], function($) {
             // Handle cancel button click.
             cancelButton.on('click', function(event) {
                 event.preventDefault(); // Prevent the default action
-                window.location.href = M.cfg.wwwroot + '/local/setcheck/manage_templates.php';
+                window.location.href = M.cfg.wwwroot + '/local/setcheck/pages/manage_templates.php';
             });
 
             /**

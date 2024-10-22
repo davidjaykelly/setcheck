@@ -23,28 +23,43 @@
  */
 
 /**
- * Extend the Moodle navigation for the plugin.
- *
- * @param global_navigation $navigation Navigation object.
+ * Summary of local_setcheck_extend_navigation
+ * @param mixed $navigation
  * @return void
  */
-function local_setcheck_extend_navigation(global_navigation $navigation) {
-    $node = $navigation->add(
-        get_string('pluginname', 'local_setcheck'),
-        new moodle_url('/local/setcheck/index.php'),
-        navigation_node::TYPE_CUSTOM,
-        null,
-        null,
-        new pix_icon('i/settings', '')
-    );
-    $node->showinflatnavigation = true;
+function local_setcheck_extend_navigation($navigation) {
+    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    local_setcheck_hook_navigation($navigation);
 }
 
 /**
- * Hook function to extend assignment settings form.
- *
- * @param MoodleQuickForm $formwrapper The form wrapper
- * @param MoodleQuickForm $mform The actual form
+ * Summary of local_setcheck_extend_navigation_category_settings
+ * @param mixed $navigation
+ * @param mixed $coursecategorycontext
+ * @return void
+ */
+function local_setcheck_extend_navigation_category_settings($navigation, $coursecategorycontext) {
+    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    local_setcheck_hook_navigation_category_settings($navigation, $coursecategorycontext);
+}
+
+/**
+ * Summary of local_setcheck_extend_navigation_course
+ * @param mixed $navigation
+ * @param mixed $course
+ * @param mixed $coursecontext
+ * @return void
+ */
+function local_setcheck_extend_navigation_course($navigation, $course, $coursecontext) {
+    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    local_setcheck_hook_navigation_course($navigation, $course, $coursecontext);
+}
+
+/**
+ * Summary of local_setcheck_coursemodule_standard_elements
+ * @param mixed $formwrapper
+ * @param mixed $mform
+ * @return void
  */
 function local_setcheck_coursemodule_standard_elements($formwrapper, $mform) {
     global $PAGE;
@@ -54,15 +69,15 @@ function local_setcheck_coursemodule_standard_elements($formwrapper, $mform) {
 
     $current = $formwrapper->get_current();
     if (isset($current->modulename) && $current->modulename === 'assign') {
-        require_once(__DIR__ . '/assignment_form_hook.php');
+        require_once(__DIR__ . '/hooks/form_hooks.php');
         local_setcheck_assignment_form_hook($mform);
     }
 }
 
 /**
- * Hook function to handle assignment settings form submission.
- *
- * @param stdClass $data Form data
+ * Summary of local_setcheck_coursemodule_edit_post_actions
+ * @param mixed $data
+ * @return mixed
  */
 function local_setcheck_coursemodule_edit_post_actions($data) {
     global $PAGE;
@@ -70,53 +85,8 @@ function local_setcheck_coursemodule_edit_post_actions($data) {
         return $data; // Do nothing if it's not related to assignment.
     }
 
-    require_once(__DIR__ . '/assignment_form_hook.php');
+    require_once(__DIR__ . '/hooks/form_hooks.php');
     local_setcheck_assignment_form_submit($data);
 
     return $data;
-}
-
-/**
- * Extends the secondary navigation for categories.
- *
- * @param navigation_node $parentnode The parent node where the new link will be added.
- */
-function local_setcheck_extend_navigation_category_settings($navigation, $coursecategorycontext) {
-    $title = get_string('create_template', 'local_setcheck');
-    $categoryid = $coursecategorycontext->instanceid; // This will give the actual category ID.
-    $path = new moodle_url("/local/setcheck/create_template.php", [
-        'pagecontextid' => $coursecategorycontext->id,
-        'categoryid' => $categoryid,
-        'contextlevel' => 'category',
-    ]);
-    $settingsnode = navigation_node::create($title,
-                                            $path,
-                                            navigation_node::TYPE_SETTING,
-                                            null,
-                                            'setcheckcreatetemplate',
-                                            new pix_icon('i/settings', ''));
-    if (isset($settingsnode)) {
-        $settingsnode->set_force_into_more_menu(true);
-        $navigation->add_node($settingsnode);
-    }
-}
-
-function local_setcheck_extend_navigation_course($navigation, $course, $coursecontext) {
-    $title = get_string('create_template', 'local_setcheck');
-    $courseid = $course->id;
-    $path = new moodle_url("/local/setcheck/create_template.php", [
-        'pagecontextid' => $coursecontext->id,
-        'courseid' => $courseid,
-        'contextlevel' => 'course',
-    ]);
-    $settingsnode = navigation_node::create($title,
-                                            $path,
-                                            navigation_node::TYPE_SETTING,
-                                            null,
-                                            'setcheckcreatetemplate',
-                                            new pix_icon('i/settings', ''));
-    if (isset($settingsnode)) {
-        $settingsnode->set_force_into_more_menu(true);
-        $navigation->add_node($settingsnode);
-    }
 }

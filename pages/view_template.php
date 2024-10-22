@@ -22,14 +22,14 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require_once(dirname(__DIR__, 3) . '/config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
 // Get the template ID from the URL.
 $templateid = required_param('id', PARAM_INT);
 
 // Set up the page.
-$PAGE->set_url('/local/setcheck/view_template.php', ['id' => $templateid]);
+$PAGE->set_url('/local/setcheck/pages/view_template.php', ['id' => $templateid]);
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('view_template', 'local_setcheck'));
 $PAGE->set_heading(get_string('view_template', 'local_setcheck'));
@@ -72,7 +72,7 @@ if ($settings && is_array($settings)) {
     echo html_writer::tag('p', get_string('no_settings_found', 'local_setcheck'));
 }
 
-echo html_writer::link(new moodle_url('/local/setcheck/manage_templates.php'),
+echo html_writer::link(new moodle_url('/local/setcheck/pages/manage_templates.php'),
     get_string('back_to_templates', 'local_setcheck'),
     ['class' => 'btn btn-secondary']);
 

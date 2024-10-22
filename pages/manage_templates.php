@@ -22,10 +22,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require_once(dirname(__DIR__, 3) . '/config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
-$PAGE->set_url('/local/setcheck/manage_templates.php');
+$PAGE->set_url('/local/setcheck/pages/manage_templates.php');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('manage_templates', 'local_setcheck'));
 $PAGE->set_heading(get_string('manage_templates', 'local_setcheck'));
@@ -50,11 +50,11 @@ foreach ($templates as $template) {
     echo html_writer::tag('td', $template->name);
     echo html_writer::tag('td', $template->description);
     echo html_writer::tag('td',
-        html_writer::link(new moodle_url('/local/setcheck/view_template.php', ['id' => $template->id]),
+        html_writer::link(new moodle_url('/local/setcheck/pages/view_template.php', ['id' => $template->id]),
             get_string('view', 'local_setcheck')) . ' | ' .
-        html_writer::link(new moodle_url('/local/setcheck/edit_template.php', ['id' => $template->id]),
+        html_writer::link(new moodle_url('/local/setcheck/pages/edit_template.php', ['id' => $template->id]),
             get_string('edit')) . ' | ' .
-        html_writer::link(new moodle_url('/local/setcheck/delete_template.php', ['id' => $template->id]),
+        html_writer::link(new moodle_url('/local/setcheck/pages/delete_template.php', ['id' => $template->id]),
             get_string('delete'))
     );
     echo html_writer::end_tag('tr');
@@ -62,7 +62,7 @@ foreach ($templates as $template) {
 
 echo html_writer::end_tag('table');
 
-echo html_writer::link(new moodle_url('/local/setcheck/create_template.php'),
+echo html_writer::link(new moodle_url('/local/setcheck/pages/create_template.php'),
     get_string('create_template', 'local_setcheck'),
     ['class' => 'btn btn-primary']);
 
