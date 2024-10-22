@@ -6,6 +6,9 @@ define(['jquery', "core/ajax"], function($) {
             const saveButton = form.find('#id_save_template_button'); // Update this to the correct ID
             const cancelButton = form.find('#id_cancel_template_button'); // Cancel button
 
+            // Get the current URL, including query parameters
+            const currentUrlWithParams = window.location.href;
+
             // Iterate over each form element to add an event listener for changes.
             formElements.each(function() {
                 const element = $(this);
@@ -40,7 +43,7 @@ define(['jquery', "core/ajax"], function($) {
 
                 // Submit the form data using AJAX
                 $.ajax({
-                    url: form.attr('action'),
+                    url: currentUrlWithParams,
                     method: 'POST',
                     data: formData,
                     success: function(response) {

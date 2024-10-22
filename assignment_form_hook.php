@@ -36,7 +36,12 @@ function local_setcheck_assignment_form_hook($mform) {
     global $DB, $PAGE;
 
     // Get all templates.
-    $templates = $DB->get_records_menu('local_setcheck_templates', null, 'name ASC', 'id, name');
+    $course = $DB->get_record('course', ['id' => $PAGE->course->id]);
+    $categoryid = $course->category;
+    $templatescat = \local_setcheck\setcheck::get_templates_for_category($course, $categoryid);
+    $templatescourse = \local_setcheck\setcheck::get_templates_for_course($PAGE->course->id);
+
+    $templateoptions = array_merge($templatescat, $templatescourse);
 
     // Add template selection dropdown at the top of the form.
     $mform->insertElementBefore(
@@ -44,11 +49,11 @@ function local_setcheck_assignment_form_hook($mform) {
         'general'
     );
 
+    // Create the dropdown select element.
     $select = $mform->createElement('select', 'setcheck_template', get_string('select_template', 'local_setcheck'),
-    [0 => get_string('select_template_option', 'local_setcheck')] + $templates);
+        [0 => get_string('select_template_option', 'local_setcheck')] + $templateoptions);
 
     $mform->insertElementBefore($select, 'general');
-
     $mform->addHelpButton('setcheck_template', 'select_template', 'local_setcheck');
 
     // Add apply template button, make it a button instead of submit to prevent form submission.

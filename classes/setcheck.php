@@ -90,4 +90,45 @@ class setcheck {
         global $DB;
         return $DB->get_records('local_setcheck_templates', null, 'name ASC');
     }
+
+    public static function get_templates_for_category($course, $categoryid) {
+        global $DB;
+
+        // Get the course category.
+        $category = \core_course_category::get($course->category);
+
+        // Get all ancestor categories up to the root, and also get the current category.
+        $categories = array_values($category->get_parents()); // Get all ancestor categories.
+        $categories[] = $categoryid; // Include the current category.
+
+        // Retrieve templates for the current and ancestor categories.
+        list($sql, $params) = $DB->get_in_or_equal($categories, SQL_PARAMS_NAMED);
+        $templates = $DB->get_records_select('local_setcheck_templates', "categoryid $sql", $params);
+
+        // Transform the result into an ID => name array for the dropdown.
+        $templateoptions = [];
+        foreach ($templates as $template) {
+            $templateoptions[$template->id] = $template->name;
+        }
+
+        return $templateoptions;
+    }
+
+    public static function get_templates_for_course($courseid) {
+        global $DB;
+
+        echo '<pre> HELLO: <br>';
+        echo '</pre>';
+
+        // Fetch templates specifically assigned to the given course ID.
+        $templates = $DB->get_records('local_setcheck_templates', ['courseid' => $courseid]);
+
+        $templateoptions = [];
+        foreach ($templates as $template) {
+            $templateoptions[$template->id] = $template->name;
+        }
+
+        return $templateoptions;
+    }
+
 }

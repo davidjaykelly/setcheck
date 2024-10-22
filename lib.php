@@ -100,3 +100,23 @@ function local_setcheck_extend_navigation_category_settings($navigation, $course
         $navigation->add_node($settingsnode);
     }
 }
+
+function local_setcheck_extend_navigation_course($navigation, $course, $coursecontext) {
+    $title = get_string('create_template', 'local_setcheck');
+    $courseid = $course->id;
+    $path = new moodle_url("/local/setcheck/create_template.php", [
+        'pagecontextid' => $coursecontext->id,
+        'courseid' => $courseid,
+        'contextlevel' => 'course',
+    ]);
+    $settingsnode = navigation_node::create($title,
+                                            $path,
+                                            navigation_node::TYPE_SETTING,
+                                            null,
+                                            'setcheckcreatetemplate',
+                                            new pix_icon('i/settings', ''));
+    if (isset($settingsnode)) {
+        $settingsnode->set_force_into_more_menu(true);
+        $navigation->add_node($settingsnode);
+    }
+}

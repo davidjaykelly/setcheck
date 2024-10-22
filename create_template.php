@@ -33,8 +33,15 @@ require_once($CFG->dirroot . '/mod/assign/mod_form.php'); // Include the assignm
 require_once($CFG->libdir . '/formslib.php'); // Include Moodle form library.
 
 // Parameters for determining context visibility (category or course).
-$categoryid = optional_param('categoryid', 0, PARAM_INT);
-$contextlevel = optional_param('contextlevel', 'course', PARAM_ALPHA);
+$categoryid = optional_param('categoryid', null, PARAM_INT);
+$coursetemplateid = optional_param('courseid', null, PARAM_INT);
+$contextid = optional_param('pagecontextid', 0, PARAM_INT); // Default to 0 if not provided.
+$contextlevel = optional_param('contextlevel', 'course', PARAM_ALPHA); // Default to 'course' if not provided.
+
+// Ensure that if context level is provided, it is valid.
+if ($contextlevel && !in_array($contextlevel, ['category', 'course'])) {
+    throw new moodle_exception('invalidcontextlevel', 'local_setcheck');
+}
 
 // First, check if course and assignment exist in plugin config.
 $courseid = get_config('local_setcheck', 'courseid');
@@ -378,6 +385,7 @@ $PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
 require_login();
 require_capability('moodle/site:config', $context); // Ensure user has admin rights.
 
+
 // Set the action URL for the form.
 $actionurl = new moodle_url('/local/setcheck/create_template.php');
 
@@ -392,6 +400,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $template = new stdClass();
         $template->name = $data['template_name'];
         $template->description = ''; // If you have a field for template description.
+        if ($contextlevel === 'category') {
+            $template->categoryid = $categoryid;
+            $template->courseid = null;
+        } else {
+            $template->courseid = $coursetemplateid;
+            $template->categoryid = null;
+        }
+        $template->contextid = $contextid; // Use the captured context ID.
+        $template->contextlevel = $contextlevel; // Use the captured context level.
+        $template->creatorid = $USER->id;
 
         // Store assignment settings as an array with Setting Name, Value, and HTML ID.
         $settings = [];

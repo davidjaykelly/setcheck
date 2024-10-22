@@ -22,11 +22,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 function xmldb_local_setcheck_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
-    if ($oldversion < 2023060101) {
+    if ($oldversion < 202410220017) {
         // Define table local_setcheck_templates to be created.
         $table = new xmldb_table('local_setcheck_templates');
 
@@ -35,6 +37,11 @@ function xmldb_local_setcheck_upgrade($oldversion) {
         $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
         $table->add_field('description', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('settings', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('contextlevel', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('creatorid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
 
@@ -47,7 +54,7 @@ function xmldb_local_setcheck_upgrade($oldversion) {
         }
 
         // SetCheck savepoint reached.
-        upgrade_plugin_savepoint(true, 2023060101, 'local', 'setcheck');
+        upgrade_plugin_savepoint(true, 202410220017, 'local', 'setcheck');
     }
 
     return true;

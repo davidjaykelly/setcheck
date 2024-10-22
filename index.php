@@ -39,8 +39,13 @@ $PAGE->requires->js_call_amd('local_setcheck/main', 'init');
 
 echo $OUTPUT->header();
 
-// Get templates.
-$templates = \local_setcheck\setcheck::get_templates();
+$course = $DB->get_record('course', ['id' => $PAGE->course->id]);
+$categoryid = $PAGE->course->category;
+
+$templatescat = \local_setcheck\setcheck::get_templates_for_category($course, $categoryid);
+$templatescourse = \local_setcheck\setcheck::get_templates_for_course($PAGE->course->id);
+
+$templates = array_merge($templatescat, $templatescourse);
 
 // Get assignments from the database.
 $assignments = $DB->get_records('assign', null, 'name ASC');
