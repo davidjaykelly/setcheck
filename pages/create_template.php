@@ -26,24 +26,42 @@ require_once(dirname(__DIR__, 3) . '/config.php');
 require_once($CFG->dirroot . '/mod/assign/mod_form.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/accesslib.php');
-require_once($CFG->dirroot . '/course/lib.php'); // Include course lib for course creation.
-require_once($CFG->dirroot . '/mod/assign/lib.php'); // Include assignment lib for assign creation.
-require_once($CFG->dirroot . '/course/modlib.php'); // Include modlib to get add_moduleinfo().
-require_once($CFG->dirroot . '/mod/assign/mod_form.php'); // Include the assignment form.
-require_once($CFG->libdir . '/formslib.php'); // Include Moodle form library.
+require_once($CFG->dirroot . '/course/lib.php');
+require_once($CFG->dirroot . '/mod/assign/lib.php');
+require_once($CFG->dirroot . '/course/modlib.php');
+require_once($CFG->dirroot . '/mod/assign/mod_form.php');
+require_once($CFG->libdir . '/formslib.php');
 
-// Parameters for determining context visibility (category or course).
-$categoryid = optional_param('categoryid', null, PARAM_INT);
-$coursetemplateid = optional_param('courseid', null, PARAM_INT);
-$contextid = optional_param('pagecontextid', 0, PARAM_INT); // Default to 0 if not provided.
-$contextlevel = optional_param('contextlevel', 'course', PARAM_ALPHA); // Default to 'course' if not provided.
+// Get context from the pagecontextid parameter.
+$pagecontextid = optional_param('contextid', 0, PARAM_INT); // Default to 0 if not provided.
+$context = context::instance_by_id($pagecontextid);
 
-// Ensure that if context level is provided, it is valid.
-if ($contextlevel && !in_array($contextlevel, ['category', 'course'])) {
+require_login();
+
+// Set up the page context and title.
+$PAGE->set_url('/local/setcheck/pages/create_template.php');
+$PAGE->set_context($context);
+$PAGE->set_title(get_string('create_template', 'local_setcheck'));
+$PAGE->set_heading(get_string('create_template', 'local_setcheck'));
+$PAGE->add_body_class('create-template-page limitedwidth');
+$PAGE->requires->css('/local/setcheck/styles/styles.css');
+$PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
+
+// Check user's capability to create templates.
+require_capability('moodle/site:config', $context);
+
+// Check if the context level is category or course.
+if ($context->contextlevel == CONTEXT_COURSECAT) {
+    $categoryid = $context->instanceid;
+    $contextlevel = 'category';
+} else if ($context->contextlevel == CONTEXT_COURSE) {
+    $courseid = $context->instanceid;
+    $contextlevel = 'course';
+} else {
     throw new moodle_exception('invalidcontextlevel', 'local_setcheck');
 }
 
-// First, check if course and assignment exist in plugin config.
+// Check if the dummy course and assignment already exist.
 $courseid = get_config('local_setcheck', 'courseid');
 $assignmentid = get_config('local_setcheck', 'assignmentid');
 $cm = null;  // Define $cm outside of the if-else block.
@@ -68,7 +86,7 @@ if (!$courseid || !$assignmentid) {
 
     // Prepare the moduleinfo object.
     $moduleinfo = new stdClass();
-    $moduleinfo->modulename = 'assign'; // The name of the module. MUST BE SET CORRECTLY.
+    $moduleinfo->modulename = 'assign'; // The name of the module.
     $moduleinfo->module = $moduleid; // Assign the module ID for 'assign'.
     $moduleinfo->course = $courseid;
     $moduleinfo->section = 0; // Section 0 or the appropriate section ID.
@@ -76,33 +94,10 @@ if (!$courseid || !$assignmentid) {
 
     // Assignment specific settings.
     $moduleinfo->name = 'Template Assignment for Setcheck';
-    $moduleinfo->intro = 'This is the introductory text for the template assignment.'; // Required field.
-    $moduleinfo->introformat = 1; // HTML format for the intro.
+    $moduleinfo->intro = 'This is the introductory text for the template assignment.';
     $moduleinfo->duedate = time() + (7 * 24 * 60 * 60); // Set due date 1 week from now.
-    $moduleinfo->cutoffdate = time() + (14 * 24 * 60 * 60); // Set cutoff date 2 weeks from now.
-    $moduleinfo->allowsubmissionsfromdate = time(); // Allow submissions from now.
-    $moduleinfo->grade = 100; // Set the maximum grade.
 
-    // Ensure these required fields are not NULL.
-    $moduleinfo->submissiondrafts = 0; // Disable submission drafts, set to 1 to enable.
-    $moduleinfo->requiresubmissionstatement = 0; // No submission statement required.
-    $moduleinfo->sendnotifications = 0; // No notifications.
-    $moduleinfo->sendlatenotifications = 0; // No late notifications.
-    $moduleinfo->sendstudentnotifications = 1; // Enable student notifications.
-
-    // Make sure other values are not null.
-    $moduleinfo->gradingduedate = time() + (21 * 24 * 60 * 60); // Set grading due date 3 weeks from now.
-    $moduleinfo->teamsubmission = 0; // No team submissions.
-    $moduleinfo->requireallteammemberssubmit = 0; // No need for all team members to submit.
-    $moduleinfo->blindmarking = 0; // Disable blind marking.
-    $moduleinfo->attemptreopenmethod = 'none'; // No reopen attempts.
-    $moduleinfo->markingworkflow = 0; // Disable marking workflow.
-    $moduleinfo->markingallocation = 0; // Disable marking allocation.
-
-    // Fetch the course object.
-    $course = $DB->get_record('course', ['id' => $courseid]);
-
-    // Create the course module and assignment instance using add_moduleinfo.
+    // Create the course module and assignment instance.
     $moduleinfo = add_moduleinfo($moduleinfo, $course);
 
     // Store the assignment ID and course module ID.
@@ -114,36 +109,19 @@ if (!$courseid || !$assignmentid) {
 
     // Fetch course module information for the newly created assignment.
     $cm = get_coursemodule_from_id('assign', $cmid, $courseid, true, MUST_EXIST);
-    $cm->course = $courseid;
-    $cm->coursemodule = $cmid;
-    $cm->visible = 0;  // Set visibility, defaulting to visible if necessary.
-
 } else {
     // Validate that the course module and assignment are still valid.
     $cm = $DB->get_record('course_modules', ['course' => $courseid, 'instance' => $assignmentid]);
 
-    if ($cm) {
-        $cm->coursemodule = $cm->id;  // Set the coursemodule property.
-        $cm->course = $courseid;       // Set the course property if it's not already set.
-        $cm->visible = $cm->visible ?? 0;  // Set visibility if not already set.
-        $cm->idnumber = '';
-        $cm->completiongradeitemnumber = -1; // No specific grade item for completion.
-        $cm->availability = json_encode([]); // No availability conditions.
-        $cm->deletioninprogress = 0; // Module is not in the process of being deleted.
-        $cm->lang = ''; // Default or unspecified language.
-
-        $course = $DB->get_record('course', ['id' => $courseid]);  // Fetch the course object.
-    } else {
-        // If the course module is broken or missing, reset the config.
+    if (!$cm) {
+        // If the course module is broken or missing, reset the config and redirect.
         set_config('courseid', null, 'local_setcheck');
         set_config('assignmentid', null, 'local_setcheck');
-        redirect(new moodle_url('/local/setcheck/pages/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
+        redirect(new moodle_url('/local/setcheck/pages/create_template.php'),
+            'Course module or assignment was invalid. Please refresh.'
+        );
     }
-
-    $cmid = $cm->id; // Use the existing course module ID.
 }
-
-$context = context_module::instance($cmid);
 
 /**
  * Form for creating assignment templates in local_setcheck plugin.
@@ -358,123 +336,100 @@ if (!$cm) {
     // If the course module is broken or missing, reset the config.
     set_config('courseid', null, 'local_setcheck');
     set_config('assignmentid', null, 'local_setcheck');
-    redirect(new moodle_url('/local/setcheck/pages/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
+    redirect(new moodle_url('/local/setcheck/pages/create_template.php'),
+    'Course module or assignment was invalid. Please refresh.'
+    );
 }
 
-$cmid = $cm->id; // Use the existing course module ID.
-$course = $DB->get_record('course', ['id' => $courseid]);
-
-// Ensure the $cm is valid before using it.
-if (!empty($cm)) {
-    $PAGE->set_cm($cm, $course); // Ensure the course matches the course module.
-} else {
-    echo "<pre>Invalid course module: CMID is empty or null.</pre>";
-    exit;
-}
-
-// Set up the page context and title.
-$PAGE->set_url('/local/setcheck/pages/create_template.php');
+// Fetch the course object again if needed.
+$course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+// Set up the page for form display.
 $PAGE->set_cm($cm, $course); // Ensure the course matches the course module.
-$PAGE->set_context($context);
-$PAGE->set_title(get_string('create_template', 'local_setcheck'));
-$PAGE->set_heading(get_string('create_template', 'local_setcheck'));
-$PAGE->add_body_class('create-template-page limitedwidth');
-$PAGE->requires->css('/local/setcheck/styles/styles.css');
-$PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
-
-require_login();
-require_capability('moodle/site:config', $context); // Ensure user has admin rights.
-
-
 // Set the action URL for the form.
 $actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
-
 // Create the form with the required arguments.
 $mform = new local_setcheck_assign_template_form($actionurl, $cm, $courseid);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Only process the template creation when it's a POST request.
-    
-    // Validate the referer to ensure it's coming from the form.
-    if (strpos($_SERVER['HTTP_REFERER'], 'create_template.php') !== false) {
-        $data = $_POST;
+    $data = $_POST;
 
-        if (!empty($data['template_name'])) {
-            // Save the template details.
-            $template = new stdClass();
-            $template->name = $data['template_name'];
-            $template->description = ''; // If you have a field for template description.
-            
-            // Assign category or course ID depending on context level.
-            if ($contextlevel === 'category') {
-                $template->categoryid = $categoryid;
-                $template->courseid = null;
-            } else {
-                $template->courseid = $coursetemplateid;
-                $template->categoryid = null;
-            }
-            
-            $template->contextid = $contextid; // Use the captured context ID.
-            $template->contextlevel = $contextlevel; // Use the captured context level.
-            $template->creatorid = $USER->id;
+    if (!empty($data['template_name'])) {
+        $contextid = $data['contextid'];
+        $context = context::instance_by_id($contextid);
 
-            // Store assignment settings as an array with Setting Name, Value, and HTML ID.
-            $settings = [];
+        // Save the template details.
+        $template = new stdClass();
+        $template->name = $data['template_name'];
+        $template->description = ''; // If you have a field for template description.
 
-            foreach ($data as $key => $value) {
-                if ($key !== 'template_name') {
-                    // Use the original key as the setting name.
-                    $settingname = $key;
-
-                    // Construct the HTML ID by appending 'id_' to the key.
-                    $htmlid = 'id_' . $key;
-
-                    // Store the setting details.
-                    $settings[] = [
-                        'setting_name' => $settingname,
-                        'value' => $value,
-                        'html_id' => $htmlid,
-                    ];
-                }
-            }
-
-            // Save settings as JSON.
-            $template->settings = json_encode($settings);
-            $template->timecreated = $template->timemodified = time();
-
-            // Insert the template into the 'local_setcheck_templates' table.
-            $DB->insert_record('local_setcheck_templates', $template);
-
-            // Generate the appropriate redirect URL based on context level.
-            if ($contextlevel === 'category') {
-                $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php',
-                    [
-                        'pagecontextid' => $contextid,
-                        'categoryid' => $categoryid,
-                        'contextlevel' => 'category',
-                    ]
-                );
-            } elseif ($contextlevel === 'course') {
-                $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php',
-                    [
-                        'pagecontextid' => $contextid,
-                        'courseid' => $coursetemplateid,
-                        'contextlevel' => 'course',
-                    ]
-                );
-            }
-
-            // Return a JSON response with the redirect URL or redirect.
-            echo json_encode(['redirect' => $redirecturl->out(false)]);
-            exit;
-        } else {
-            echo json_encode(['error' => 'Template name is required.']);
-            exit;
+        // Assign category or course ID depending on context level.
+        if ($context->contextlevel == CONTEXT_COURSECAT) {
+            $categoryid = $context->instanceid;
+            $template->categoryid = $categoryid;
+            $template->courseid = null;
+        } else if ($context->contextlevel == CONTEXT_COURSE) {
+            $coursetemplateid = $context->instanceid;
+            $template->courseid = $coursetemplateid;
+            $template->categoryid = null;
         }
+
+        $template->contextid = $contextid; // Use the captured context ID.
+        $template->contextlevel = $contextlevel; // Use the captured context level.
+        $template->creatorid = $USER->id;
+
+        // Store assignment settings as an array with Setting Name, Value, and HTML ID.
+        $settings = [];
+
+        foreach ($data as $key => $value) {
+            if ($key !== 'template_name') {
+                // Use the original key as the setting name.
+                $settingname = $key;
+
+                // Construct the HTML ID by appending 'id_' to the key.
+                $htmlid = 'id_' . $key;
+
+                // Store the setting details.
+                $settings[] = [
+                    'setting_name' => $settingname,
+                    'value' => $value,
+                    'html_id' => $htmlid,
+                ];
+            }
+        }
+
+        // Save settings as JSON.
+        $template->settings = json_encode($settings);
+        $template->timecreated = $template->timemodified = time();
+
+        // Insert the template into the 'local_setcheck_templates' table.
+        $DB->insert_record('local_setcheck_templates', $template);
+
+        // Generate the appropriate redirect URL based on context level.
+        if ($context->contextlevel == CONTEXT_COURSECAT) {
+            $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php',
+                [
+                    'contextid' => $contextid,
+                ]
+            );
+        } else if ($context->contextlevel == CONTEXT_COURSE) {
+            $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php',
+                [
+                    'contextid' => $contextid,
+                ]
+            );
+        }
+
+        // Return a JSON response with the redirect URL or redirect.
+        echo json_encode(['redirect' => $redirecturl->out(false)]);
+        exit;
+    } else {
+        echo json_encode(['error' => 'Template name is required.']);
+        exit;
     }
+
 } else {
     // If it's a GET request (when the page is loaded via a URL), just show the form without processing.
     echo $OUTPUT->header();
-    $mform->display(); // Display the form
+    $mform->display(); // Display the form.
     echo $OUTPUT->footer();
 }

@@ -29,20 +29,16 @@ require_once(dirname(__DIR__, 3) . '/config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/local/setcheck/lib.php');
 
-use local_setcheck\services\TemplateService; // Import the TemplateService class.
+use local_setcheck\services\TemplateService;
 
-// Parameters for determining context visibility (category or course).
-$categoryid = optional_param('categoryid', null, PARAM_INT);
-$coursetemplateid = optional_param('courseid', null, PARAM_INT);
-$contextid = optional_param('pagecontextid', 0, PARAM_INT); // Default to 0 if not provided.
-$contextlevel = optional_param('contextlevel', 'course', PARAM_ALPHA); // Default to 'course' if not provided.
+// Get context from the contextid parameter.
+$contextid = optional_param('contextid', 0, PARAM_INT);
+list($context, $course, $cm) = get_context_info_array($contextid);
 
 // Set up the page context and title.
 $PAGE->set_url('/local/setcheck/pages/manage_template.php');
 $PAGE->add_body_class('manage-template-page limitedwidth');
 $PAGE->requires->css('/local/setcheck/styles/styles.css');
-
-list($context, $course, $cm) = get_context_info_array($contextid);
 
 // Check login and permissions.
 require_login($course, false, $cm);
@@ -60,10 +56,8 @@ if ($context->contextlevel == CONTEXT_COURSECAT) {
     $templates = TemplateService::get_templates_for_category($categoryid);
 }
 if ($context->contextlevel == CONTEXT_COURSE) {
-    $course = $DB->get_record('course', ['id' => $coursetemplateid]);
     $courseid = $course->id;
     $templates = TemplateService::get_templates_for_course($courseid);
-
 }
 
 // Fetch full template details from the database.
@@ -123,9 +117,7 @@ if (!empty($templates)) {
 
 if ($context->contextlevel == CONTEXT_COURSECAT) {
     $url = new moodle_url("/local/setcheck/pages/create_template.php", [
-        'pagecontextid' => $contextid,
-        'categoryid' => $categoryid,
-        'contextlevel' => 'category',
+        'contextid' => $contextid,
     ]);
     // Add the button with GET request method.
     echo $OUTPUT->single_button($url, get_string('create_template', 'local_setcheck'), 'get');
@@ -133,15 +125,11 @@ if ($context->contextlevel == CONTEXT_COURSECAT) {
 
 if ($context->contextlevel == CONTEXT_COURSE) {
     $url = new moodle_url("/local/setcheck/pages/create_template.php", [
-        'pagecontextid' => $contextid,
-        'courseid' => $coursetemplateid,
-        'contextlevel' => 'course',
+        'contextid' => $contextid,
     ]);
     // Add the button with GET request method.
     echo $OUTPUT->single_button($url, get_string('create_template', 'local_setcheck'), 'get');
 }
-
-
 
 // Display the page footer.
 echo $OUTPUT->footer();

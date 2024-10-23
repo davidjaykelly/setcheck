@@ -49,15 +49,8 @@ function local_setcheck_hook_navigation($navigation) {
 function local_setcheck_hook_navigation_category_settings($navigation, $coursecategorycontext) {
     $title = get_string('manage_activity_templates', 'local_setcheck');
     $categoryid = $coursecategorycontext->instanceid; // This will give the actual category ID.
-    $createpath = new moodle_url("/local/setcheck/pages/create_template.php", [
-        'pagecontextid' => $coursecategorycontext->id,
-        'categoryid' => $categoryid,
-        'contextlevel' => 'category',
-    ]);
     $managepath = new moodle_url("/local/setcheck/pages/manage_templates.php", [
-        'pagecontextid' => $coursecategorycontext->id,
-        'categoryid' => $categoryid,
-        'contextlevel' => 'category',
+        'contextid' => $coursecategorycontext->id,
     ]);
     $settingsnode = navigation_node::create($title,
                                             $managepath,
@@ -79,15 +72,8 @@ function local_setcheck_hook_navigation_category_settings($navigation, $courseca
 function local_setcheck_hook_navigation_course($navigation, $course, $coursecontext) {
     $title = get_string('manage_activity_templates', 'local_setcheck');
     $courseid = $course->id;
-    $createpath = new moodle_url("/local/setcheck/pages/create_template.php", [
-        'pagecontextid' => $coursecontext->id,
-        'courseid' => $courseid,
-        'contextlevel' => 'course',
-    ]);
     $managepath = new moodle_url("/local/setcheck/pages/manage_templates.php", [
-        'pagecontextid' => $coursecontext->id,
-        'courseid' => $courseid,
-        'contextlevel' => 'course',
+        'contextid' => $coursecontext->id,
     ]);
     $settingsnode = navigation_node::create($title,
                                             $managepath,
