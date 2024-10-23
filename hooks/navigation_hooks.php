@@ -47,15 +47,20 @@ function local_setcheck_hook_navigation($navigation) {
  * @param navigation_node $parentnode The parent node where the new link will be added.
  */
 function local_setcheck_hook_navigation_category_settings($navigation, $coursecategorycontext) {
-    $title = get_string('create_template', 'local_setcheck');
+    $title = get_string('manage_activity_templates', 'local_setcheck');
     $categoryid = $coursecategorycontext->instanceid; // This will give the actual category ID.
-    $path = new moodle_url("/local/setcheck/pages/create_template.php", [
+    $createpath = new moodle_url("/local/setcheck/pages/create_template.php", [
+        'pagecontextid' => $coursecategorycontext->id,
+        'categoryid' => $categoryid,
+        'contextlevel' => 'category',
+    ]);
+    $managepath = new moodle_url("/local/setcheck/manage_templates.php", [
         'pagecontextid' => $coursecategorycontext->id,
         'categoryid' => $categoryid,
         'contextlevel' => 'category',
     ]);
     $settingsnode = navigation_node::create($title,
-                                            $path,
+                                            $managepath,
                                             navigation_node::TYPE_SETTING,
                                             null,
                                             'setcheckcreatetemplate',
@@ -72,15 +77,20 @@ function local_setcheck_hook_navigation_category_settings($navigation, $courseca
  * @param navigation_node $parentnode The parent node where the new link will be added.
  */
 function local_setcheck_hook_navigation_course($navigation, $course, $coursecontext) {
-    $title = get_string('create_template', 'local_setcheck');
+    $title = get_string('manage_activity_templates', 'local_setcheck');
     $courseid = $course->id;
-    $path = new moodle_url("/local/setcheck/pages/create_template.php", [
+    $createpath = new moodle_url("/local/setcheck/pages/create_template.php", [
+        'pagecontextid' => $coursecontext->id,
+        'courseid' => $courseid,
+        'contextlevel' => 'course',
+    ]);
+    $managepath = new moodle_url("/local/setcheck/manage_templates.php", [
         'pagecontextid' => $coursecontext->id,
         'courseid' => $courseid,
         'contextlevel' => 'course',
     ]);
     $settingsnode = navigation_node::create($title,
-                                            $path,
+                                            $managepath,
                                             navigation_node::TYPE_SETTING,
                                             null,
                                             'setcheckcreatetemplate',

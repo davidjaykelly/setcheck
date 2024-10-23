@@ -42,7 +42,7 @@ function local_setcheck_assignment_form_hook($mform) {
     // Get all templates.
     $course = $DB->get_record('course', ['id' => $PAGE->course->id]);
     $categoryid = $course->category;
-    $templatescat = TemplateService::get_templates_for_category($course, $categoryid);
+    $templatescat = TemplateService::get_templates_for_category_from_module($course, $categoryid);
     $templatescourse = TemplateService::get_templates_for_course($PAGE->course->id);
 
     $templateoptions = array_merge($templatescat, $templatescourse);

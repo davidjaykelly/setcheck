@@ -36,7 +36,7 @@ class TemplateService {
      * @param mixed $categoryid
      * @return array
      */
-    public static function get_templates_for_category($course, $categoryid) {
+    public static function get_templates_for_category_from_module($course, $categoryid) {
         global $DB;
 
         // Get the course category.

@@ -70,3 +70,4 @@ $string['template_settings'] = 'Template Settings';
 $string['create_template'] = 'Create Template';
 $string['create_template_course'] = 'Create Template for Course';
 $string['create_template_category'] = 'Create Template for Category';
+$string['manage_activity_templates'] = 'Manage Activity Templates';
