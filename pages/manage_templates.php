@@ -25,7 +25,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require_once(dirname(__DIR__, 3) . '/config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/local/setcheck/lib.php');
 
@@ -37,35 +37,46 @@ $coursetemplateid = optional_param('courseid', null, PARAM_INT);
 $contextid = optional_param('pagecontextid', 0, PARAM_INT); // Default to 0 if not provided.
 $contextlevel = optional_param('contextlevel', 'course', PARAM_ALPHA); // Default to 'course' if not provided.
 
-$context = context::instance_by_id($contextid, IGNORE_MISSING);
-
-if (!$context) {
-    // If no context is provided, default to system context.
-    $context = context_system::instance();
-}
-
 // Set up the page context and title.
 $PAGE->set_url('/local/setcheck/pages/manage_template.php');
-$PAGE->set_context($context);
-$PAGE->set_title(get_string('manage_activity_templates', 'local_setcheck'));
-$PAGE->set_heading(get_string('manage_activity_templates', 'local_setcheck'));
 $PAGE->add_body_class('manage-template-page limitedwidth');
 $PAGE->requires->css('/local/setcheck/styles/styles.css');
-// $PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
 
-require_login();
-require_capability('moodle/site:config', $context); // Ensure user has admin rights.
+list($context, $course, $cm) = get_context_info_array($contextid);
+
+// Check login and permissions.
+require_login($course, false, $cm);
+require_capability('moodle/filter:manage', $context);
+$PAGE->set_context($context);
+
+$PAGE->set_pagelayout('admin');
+$PAGE->activityheader->disable();
+echo $OUTPUT->header();
 
 // Fetch templates based on the current context.
 $templates = [];
 if ($context->contextlevel == CONTEXT_COURSECAT) {
-    $category = \core_course_category::get($context->instanceid); // Get the category object.
+    $categoryid = $context->instanceid;
+    $templates = TemplateService::get_templates_for_category($categoryid);
+}
+if ($context->contextlevel == CONTEXT_COURSE) {
+    $course = $DB->get_record('course', ['id' => $coursetemplateid]);
+    $courseid = $course->id;
+    $templates = TemplateService::get_templates_for_course($courseid);
 
 }
-// Display the page header.
-echo $OUTPUT->header();
 
-echo html_writer::tag('h2', get_string('managetemplatesheading', 'local_setcheck'));
+// Fetch full template details from the database.
+$fulltemplates = [];
+foreach (array_keys($templates) as $templateid) {
+    $fulltemplate = $DB->get_record('local_setcheck_templates', ['id' => $templateid], '*', MUST_EXIST);
+    $fulltemplates[$templateid] = $fulltemplate;
+}
+
+$PAGE->set_title(get_string('manage_activity_templates', 'local_setcheck'));
+$PAGE->set_heading(get_string('manage_activity_templates', 'local_setcheck'));
+
+echo html_writer::tag('h2', get_string('manage_activity_templates', 'local_setcheck'));
 
 // Display the list of templates in a table.
 if (!empty($templates)) {
@@ -76,13 +87,16 @@ if (!empty($templates)) {
         get_string('actions', 'local_setcheck'),
     ];
 
-    foreach ($templates as $template) {
+    foreach ($fulltemplates as $template) {
         if ($template->categoryid) {
             $category = \core_course_category::get($template->categoryid);
             $contextname = $category->get_formatted_name();
-        } else {
+        } else if ($template->courseid) { // Check for course ID.
             $course = get_course($template->courseid);
             $contextname = $course->fullname;
+        } else {
+            // Handle the case where both categoryid and courseid are null.
+            $contextname = get_string('unknown_context', 'local_setcheck');
         }
 
         $actions = html_writer::link(
@@ -107,8 +121,27 @@ if (!empty($templates)) {
     echo html_writer::tag('p', get_string('notemplates', 'local_setcheck'));
 }
 
-// Add a button for creating a new template.
-echo $OUTPUT->single_button(new moodle_url('/local/setcheck/create_template.php', ['contextid' => $context->id]), get_string('createtemplate', 'local_setcheck'));
+if ($context->contextlevel == CONTEXT_COURSECAT) {
+    $url = new moodle_url("/local/setcheck/pages/create_template.php", [
+        'pagecontextid' => $contextid,
+        'categoryid' => $categoryid,
+        'contextlevel' => 'category',
+    ]);
+    // Add the button with GET request method.
+    echo $OUTPUT->single_button($url, get_string('create_template', 'local_setcheck'), 'get');
+}
+
+if ($context->contextlevel == CONTEXT_COURSE) {
+    $url = new moodle_url("/local/setcheck/pages/create_template.php", [
+        'pagecontextid' => $contextid,
+        'courseid' => $coursetemplateid,
+        'contextlevel' => 'course',
+    ]);
+    // Add the button with GET request method.
+    echo $OUTPUT->single_button($url, get_string('create_template', 'local_setcheck'), 'get');
+}
+
+
 
 // Display the page footer.
 echo $OUTPUT->footer();

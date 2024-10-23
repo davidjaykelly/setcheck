@@ -393,64 +393,88 @@ $actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
 $mform = new local_setcheck_assign_template_form($actionurl, $cm, $courseid);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $data = $_POST;
+    // Only process the template creation when it's a POST request.
+    
+    // Validate the referer to ensure it's coming from the form.
+    if (strpos($_SERVER['HTTP_REFERER'], 'create_template.php') !== false) {
+        $data = $_POST;
 
-    if (!empty($data['template_name'])) {
-        // Save the template details.
-        $template = new stdClass();
-        $template->name = $data['template_name'];
-        $template->description = ''; // If you have a field for template description.
-        if ($contextlevel === 'category') {
-            $template->categoryid = $categoryid;
-            $template->courseid = null;
-        } else {
-            $template->courseid = $coursetemplateid;
-            $template->categoryid = null;
-        }
-        $template->contextid = $contextid; // Use the captured context ID.
-        $template->contextlevel = $contextlevel; // Use the captured context level.
-        $template->creatorid = $USER->id;
-
-        // Store assignment settings as an array with Setting Name, Value, and HTML ID.
-        $settings = [];
-
-        foreach ($data as $key => $value) {
-            if ($key !== 'template_name') {
-                // Use the original key as the setting name.
-                $settingname = $key;
-
-                // Construct the HTML ID by appending 'id_' to the key.
-                $htmlid = 'id_' . $key;
-
-                // Store the setting details.
-                $settings[] = [
-                    'setting_name' => $settingname,
-                    'value' => $value,
-                    'html_id' => $htmlid,
-                ];
+        if (!empty($data['template_name'])) {
+            // Save the template details.
+            $template = new stdClass();
+            $template->name = $data['template_name'];
+            $template->description = ''; // If you have a field for template description.
+            
+            // Assign category or course ID depending on context level.
+            if ($contextlevel === 'category') {
+                $template->categoryid = $categoryid;
+                $template->courseid = null;
+            } else {
+                $template->courseid = $coursetemplateid;
+                $template->categoryid = null;
             }
+            
+            $template->contextid = $contextid; // Use the captured context ID.
+            $template->contextlevel = $contextlevel; // Use the captured context level.
+            $template->creatorid = $USER->id;
+
+            // Store assignment settings as an array with Setting Name, Value, and HTML ID.
+            $settings = [];
+
+            foreach ($data as $key => $value) {
+                if ($key !== 'template_name') {
+                    // Use the original key as the setting name.
+                    $settingname = $key;
+
+                    // Construct the HTML ID by appending 'id_' to the key.
+                    $htmlid = 'id_' . $key;
+
+                    // Store the setting details.
+                    $settings[] = [
+                        'setting_name' => $settingname,
+                        'value' => $value,
+                        'html_id' => $htmlid,
+                    ];
+                }
+            }
+
+            // Save settings as JSON.
+            $template->settings = json_encode($settings);
+            $template->timecreated = $template->timemodified = time();
+
+            // Insert the template into the 'local_setcheck_templates' table.
+            $DB->insert_record('local_setcheck_templates', $template);
+
+            // Generate the appropriate redirect URL based on context level.
+            if ($contextlevel === 'category') {
+                $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php',
+                    [
+                        'pagecontextid' => $contextid,
+                        'categoryid' => $categoryid,
+                        'contextlevel' => 'category',
+                    ]
+                );
+            } elseif ($contextlevel === 'course') {
+                $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php',
+                    [
+                        'pagecontextid' => $contextid,
+                        'courseid' => $coursetemplateid,
+                        'contextlevel' => 'course',
+                    ]
+                );
+            }
+
+            // Return a JSON response with the redirect URL or redirect.
+            echo json_encode(['redirect' => $redirecturl->out(false)]);
+            exit;
+        } else {
+            echo json_encode(['error' => 'Template name is required.']);
+            exit;
         }
-
-        // Save settings as JSON.
-        $template->settings = json_encode($settings);
-        $template->timecreated = $template->timemodified = time();
-
-        // Insert the template into the 'local_setcheck_templates' table.
-        $DB->insert_record('local_setcheck_templates', $template);
-
-        // Use Moodle's moodle_url to generate the redirect URL.
-        $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php');
-
-        // Return a JSON response with the redirect URL.
-        echo json_encode(['redirect' => $redirecturl->out(false)]);
-        exit;
-    } else {
-        echo json_encode(['error' => 'Template name is required.']);
-        exit;
     }
+} else {
+    // If it's a GET request (when the page is loaded via a URL), just show the form without processing.
+    echo $OUTPUT->header();
+    $mform->display(); // Display the form
+    echo $OUTPUT->footer();
 }
-
-
-echo $OUTPUT->header();
-$mform->display();
-echo $OUTPUT->footer();

@@ -54,7 +54,7 @@ function local_setcheck_hook_navigation_category_settings($navigation, $courseca
         'categoryid' => $categoryid,
         'contextlevel' => 'category',
     ]);
-    $managepath = new moodle_url("/local/setcheck/manage_templates.php", [
+    $managepath = new moodle_url("/local/setcheck/pages/manage_templates.php", [
         'pagecontextid' => $coursecategorycontext->id,
         'categoryid' => $categoryid,
         'contextlevel' => 'category',
@@ -84,7 +84,7 @@ function local_setcheck_hook_navigation_course($navigation, $course, $coursecont
         'courseid' => $courseid,
         'contextlevel' => 'course',
     ]);
-    $managepath = new moodle_url("/local/setcheck/manage_templates.php", [
+    $managepath = new moodle_url("/local/setcheck/pages/manage_templates.php", [
         'pagecontextid' => $coursecontext->id,
         'courseid' => $courseid,
         'contextlevel' => 'course',
