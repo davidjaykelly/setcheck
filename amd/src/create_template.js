@@ -59,9 +59,7 @@ define(['jquery', "core/ajax"], function($) {
                 formData = {...formData, ...queryParams};
 
                 const baseUrl = M.cfg.wwwroot;
-                const url = baseUrl + '/local/setcheck/pages/create_template.php';
-
-                console.log(formData);
+                const url = baseUrl + '/local/setcheck/pages/create_template.php?';
 
                 // Submit the form data using AJAX
                 $.ajax({
@@ -69,7 +67,6 @@ define(['jquery', "core/ajax"], function($) {
                     method: 'POST',
                     data: formData,
                     success: function(response) {
-                        console.log(response);
                         // Handle success response
                         const responseData = JSON.parse(response);
                         if (responseData.redirect) {

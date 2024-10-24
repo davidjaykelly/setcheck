@@ -31,9 +31,11 @@ require_once($CFG->dirroot . '/mod/assign/lib.php');
 require_once($CFG->dirroot . '/course/modlib.php');
 require_once($CFG->dirroot . '/mod/assign/mod_form.php');
 require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->dirroot . '/local/setcheck/classes/form/assign_template_form.php');
+
 
 // Get context from the pagecontextid parameter.
-$pagecontextid = optional_param('contextid', 0, PARAM_INT); // Default to 0 if not provided.
+$pagecontextid = optional_param('contextid', 0, PARAM_INT);
 $context = context::instance_by_id($pagecontextid);
 
 require_login();
@@ -61,294 +63,101 @@ if ($context->contextlevel == CONTEXT_COURSECAT) {
     throw new moodle_exception('invalidcontextlevel', 'local_setcheck');
 }
 
-// Check if the dummy course and assignment already exist.
+// Fetch the course module and other data based on configuration.
 $courseid = get_config('local_setcheck', 'courseid');
 $assignmentid = get_config('local_setcheck', 'assignmentid');
-$cm = null;  // Define $cm outside of the if-else block.
+$cm = null;
 
-if (!$courseid || !$assignmentid) {
-    // Step 1: Create a hidden course if it doesn't exist.
-    $courseconfig = new stdClass();
-    $courseconfig->fullname = 'Template Course for Setcheck';
-    $courseconfig->shortname = 'setcheck_template_course_' . time(); // Unique shortname.
-    $courseconfig->category = 1; // Default category.
-    $courseconfig->visible = 0; // Hidden course.
+if (!$assignmentid) {
+    // Get course ID from the config.
+    $courseid = get_config('local_setcheck', 'courseid');
+    $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
-    $course = create_course($courseconfig);
-    $courseid = $course->id; // Store course ID.
-
-    // Save course ID to the plugin config.
-    set_config('courseid', $courseid, 'local_setcheck');
-
-    // Get the module ID for 'assign' from the mdl_modules table.
+    // Fetch the module ID for the 'assign' module.
     $module = $DB->get_record('modules', ['name' => 'assign'], '*', MUST_EXIST);
     $moduleid = $module->id; // Get the 'assign' module ID.
 
-    // Prepare the moduleinfo object.
+    // Proceed to create the assignment inside the hidden course.
     $moduleinfo = new stdClass();
-    $moduleinfo->modulename = 'assign'; // The name of the module.
-    $moduleinfo->module = $moduleid; // Assign the module ID for 'assign'.
+    $moduleinfo->modulename = 'assign';
+    $moduleinfo->module = $moduleid;
     $moduleinfo->course = $courseid;
-    $moduleinfo->section = 0; // Section 0 or the appropriate section ID.
-    $moduleinfo->visible = 0; // Hidden course module.
-
+    $moduleinfo->section = 0;
+    $moduleinfo->visible = 0;
     // Assignment specific settings.
     $moduleinfo->name = 'Template Assignment for Setcheck';
-    $moduleinfo->intro = 'This is the introductory text for the template assignment.';
+    $moduleinfo->intro = 'This is the introductory text for the template assignment.'; // Required field.
+    $moduleinfo->introformat = 1; // HTML format for the intro.
     $moduleinfo->duedate = time() + (7 * 24 * 60 * 60); // Set due date 1 week from now.
+    $moduleinfo->cutoffdate = time() + (14 * 24 * 60 * 60); // Set cutoff date 2 weeks from now.
+    $moduleinfo->allowsubmissionsfromdate = time(); // Allow submissions from now.
+    $moduleinfo->grade = 100; // Set the maximum grade.
+    // Ensure these required fields are not NULL.
+    $moduleinfo->submissiondrafts = 0; // Disable submission drafts, set to 1 to enable.
+    $moduleinfo->requiresubmissionstatement = 0; // No submission statement required.
+    $moduleinfo->sendnotifications = 0; // No notifications.
+    $moduleinfo->sendlatenotifications = 0; // No late notifications.
+    $moduleinfo->sendstudentnotifications = 1; // Enable student notifications.
+    // Make sure other values are not null.
+    $moduleinfo->gradingduedate = time() + (21 * 24 * 60 * 60); // Set grading due date 3 weeks from now.
+    $moduleinfo->teamsubmission = 0; // No team submissions.
+    $moduleinfo->requireallteammemberssubmit = 0; // No need for all team members to submit.
+    $moduleinfo->blindmarking = 0; // Disable blind marking.
+    $moduleinfo->attemptreopenmethod = 'none'; // No reopen attempts.
+    $moduleinfo->markingworkflow = 0; // Disable marking workflow.
+    $moduleinfo->markingallocation = 0; // Disable marking allocation.
 
-    // Create the course module and assignment instance.
+    $course = $DB->get_record('course', ['id' => $courseid]);  // Fetch the course object.
+
+    // Create & save the assignment.
     $moduleinfo = add_moduleinfo($moduleinfo, $course);
+    $cmid = $moduleinfo->coursemodule;
 
     // Store the assignment ID and course module ID.
     $assignmentid = $moduleinfo->instance;
-    $cmid = $moduleinfo->coursemodule;
-
     // Save IDs to the plugin config.
     set_config('assignmentid', $assignmentid, 'local_setcheck');
 
     // Fetch course module information for the newly created assignment.
     $cm = get_coursemodule_from_id('assign', $cmid, $courseid, true, MUST_EXIST);
+    $cm->course = $courseid;
+    $cm->coursemodule = $cmid;
+    $cm->visible = 0;  // Set visibility, defaulting to visible if necessary.
+
 } else {
     // Validate that the course module and assignment are still valid.
     $cm = $DB->get_record('course_modules', ['course' => $courseid, 'instance' => $assignmentid]);
 
-    if (!$cm) {
-        // If the course module is broken or missing, reset the config and redirect.
+    if ($cm) {
+        $cm->coursemodule = $cm->id;  // Set the coursemodule property.
+        $cm->course = $courseid;       // Set the course property if it's not already set.
+        $cm->visible = $cm->visible ?? 0;  // Set visibility if not already set.
+        $cm->idnumber = '';
+        $cm->completiongradeitemnumber = -1; // No specific grade item for completion.
+        $cm->availability = json_encode([]); // No availability conditions.
+        $cm->deletioninprogress = 0; // Module is not in the process of being deleted.
+        $cm->lang = ''; // Default or unspecified language.
+
+        $course = $DB->get_record('course', ['id' => $courseid]);  // Fetch the course object.
+    } else {
+        // If the course module is broken or missing, reset the config.
         set_config('courseid', null, 'local_setcheck');
         set_config('assignmentid', null, 'local_setcheck');
-        redirect(new moodle_url('/local/setcheck/pages/create_template.php'),
-            'Course module or assignment was invalid. Please refresh.'
-        );
+        redirect(new moodle_url('/local/setcheck/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
     }
+
+    $cmid = $cm->id; // Use the existing course module ID.
 }
+// Turn off debugging messages temporarily.
+$previousdebug = $CFG->debug;
+$CFG->debug = DEBUG_NONE;
+$PAGE->set_cm($cm, $course);
+$CFG->debug = $previousdebug;
 
-/**
- * Form for creating assignment templates in local_setcheck plugin.
- * This form extends the default assignment settings form (mod_assign_mod_form).
- *
- * @package    local_setcheck
- * @copyright  2024 David Kelly
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class local_setcheck_assign_template_form extends moodleform {
-    /**
-     * @var object Course module object.
-     */
-    protected $cm;
-
-    /**
-     * @var int Course ID.
-     */
-    protected $courseid;
-
-    /**
-     * Constructor to accept course module and course ID.
-     *
-     * @param moodle_url $actionurl URL for the form action.
-     * @param object $cm Course module object.
-     * @param int $courseid Course ID.
-     */
-    public function __construct($actionurl, $cm, $courseid) {
-        $this->cm = $cm;
-        $this->courseid = $courseid;
-
-        // Call the parent constructor.
-        parent::__construct($actionurl);
-    }
-
-    /**
-     * Defines the form structure.
-     *
-     * @return void
-     */
-    public function definition() {
-        global $DB;
-
-        $mform = $this->_form;
-        $mform->updateAttributes(['id' => 'create_template_form']);
-
-        // Dynamically load the existing assignment form via reflection.
-        $templatehtmlids = []; // Array to store HTML IDs.
-
-        // Add a collapsible section for Template Settings.
-        $mform->addElement('header', 'templatesettings', get_string('template_settings', 'local_setcheck'));
-        $mform->setExpanded('templatesettings', true);
-
-        // Add the template name field.
-        $templatenameelement = $mform->addElement('text', 'template_name', get_string('template_name', 'local_setcheck'));
-        $mform->setType('template_name', PARAM_TEXT);
-        $mform->addRule('template_name', get_string('required', 'local_setcheck'), 'required', null, 'server');
-        $mform->setDefault('template_name', '');
-
-        // Add the template description field.
-        $templatedescriptionelement = $mform->addElement(
-            'editor', 'template_description',
-            get_string('template_description', 'local_setcheck')
-        );
-        $mform->setType('template_description', PARAM_RAW);
-        $mform->setDefault('template_description', '');
-
-        // Save the HTML ID of the 'template_name' field.
-        $templatehtmlids['template_name'] = $templatenameelement->getAttribute('id');
-        $templatehtmlids['template_description'] = $templatedescriptionelement->getAttribute('id');
-
-        // Add assignment form fields dynamically and store their HTML IDs.
-        $this->add_assign_form_fields($mform, $templatehtmlids);
-        $this->remove_unwanted_elements($mform);
-
-        // Add a button array to the form (Save and Cancel buttons).
-        $buttonarray = [];
-        $buttonarray[] = $mform->createElement(
-            'button',
-            'save_template_button',
-            get_string('save_template',
-            'local_setcheck')
-        );
-        $buttonarray[] = $mform->createElement(
-            'cancel',
-            'cancel_template_button',
-            get_string('cancel')
-        );
-
-        // Add the group of buttons to the form.
-        $mform->addGroup($buttonarray, 'buttonar', '', ' ', false);
-        $mform->setType('template_html_ids', PARAM_RAW);
-
-        $mform->closeHeaderBefore('buttonar');
-
-    }
-
-    /**
-     * Removes unwanted elements from the form.
-     *
-     * @param MoodleQuickForm $mform The form object.
-     * @return void
-     */
-    private function remove_unwanted_elements($mform) {
-        // List of elements to remove.
-        $elementstoremove = [
-            'general',
-            'name',         // Assignment name.
-            'intro',        // Introduction/Description.
-            'introattachments', // Attachments.
-            'submissionattachments', // Attachments.
-            'pageheader',   // Page header (if applicable).
-            'introeditor',  // Intro editor if present.
-            'showdescription',
-            'activityeditor',
-            'competenciessection',
-            'tagshdr',
-            'tags',
-            'buttonar',
-            'competenciessection',
-            'competencies',
-            'competency_rule',
-            'override_grade',
-            'restrictgroupbutton',
-            'availabilityconditionsheader',
-            'availabilityconditionsjson',
-            '_qf__mod_assign_mod_form',
-            'modstandardelshdr',
-            'visible',
-            'cmidnumber',
-            'lang',
-            'groupmode',
-            'groupingid',
-            'restrictgroupbutton',
-            'availabilityconditionsheader',
-            'availabilityconditionsjson',
-            'course',
-            'coursemodule',
-            'section',
-            'module',
-            'modulename',
-            'instance',
-            'add',
-            'update',
-            'return',
-            'sr',
-            'beforemod',
-            'showonly',
-            'coursecontentnotification',
-        ];
-
-        // Iterate over each element name and remove it if it exists.
-        foreach ($elementstoremove as $elementname) {
-            if ($mform->elementExists($elementname)) {
-                $mform->removeElement($elementname);
-            }
-        }
-    }
-
-    /**
-     * Adds assignment form fields dynamically using reflection.
-     *
-     * @param MoodleQuickForm $mform The form object.
-     * @param array $templatehtmlids Array to store HTML IDs of form elements.
-     * @return void
-     */
-    private function add_assign_form_fields($mform, &$templatehtmlids) {
-        global $DB;
-
-        // Fetch data needed for the constructor of mod_assign_mod_form.
-        $course = $DB->get_record('course', ['id' => $this->courseid], '*', MUST_EXIST);
-        $cm = get_coursemodule_from_id('assign', $this->cm->id, $this->courseid);
-
-        $cm->idnumber = ''; // Set to empty string.
-        $cm->completiongradeitemnumber = -1; // Set to -1.
-        $cm->availability = '{}'; // Set to an empty JSON object.
-        $cm->lang = ''; // Set to an empty string.
-        $cm->section = 0; // Set to visible.
-
-        // Fake data for $current if needed.
-        $current = new stdClass();
-        $current->instance = 0; // Fake or retrieve current instance data if needed.
-        $current->course = $course->id; // Add the course ID.
-        $current->coursemodule = ''; // Add the course module ID.
-        $current->visible = isset($cm->visible) ? $cm->visible : 1;
-
-        // Instantiate the original assignment form.
-        $assignform = new mod_assign_mod_form($current, $cm->section, $cm, $course);
-
-        // Use reflection to access the protected property _form (where the elements are stored).
-        $reflection = new ReflectionClass($assignform);
-        $formproperty = $reflection->getProperty('_form');
-        $formproperty->setAccessible(true);
-        $originalform = $formproperty->getValue($assignform);
-
-        // Adding a type definition for the 'assignsubmission_comments_enabled' element.
-        $mform->setType('assignsubmission_comments_enabled', PARAM_INT);
-
-        // Adding a type definition for the 'assignsubmission_onlinetext_wordlimit' element.
-        $mform->setType('assignsubmission_onlinetext_wordlimit', PARAM_INT);
-
-        foreach ($originalform->_elements as $element) {
-            $elementname = $element->getName();
-            $mform->addElement($element);
-
-            $mform->setType($elementname, PARAM_RAW);
-        }
-    }
-}
-
-if (!$cm) {
-    // If the course module is broken or missing, reset the config.
-    set_config('courseid', null, 'local_setcheck');
-    set_config('assignmentid', null, 'local_setcheck');
-    redirect(new moodle_url('/local/setcheck/pages/create_template.php'),
-    'Course module or assignment was invalid. Please refresh.'
-    );
-}
-
-// Fetch the course object again if needed.
-$course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
-// Set up the page for form display.
-$PAGE->set_cm($cm, $course); // Ensure the course matches the course module.
-// Set the action URL for the form.
 $actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
+
 // Create the form with the required arguments.
-$mform = new local_setcheck_assign_template_form($actionurl, $cm, $courseid);
+$mform = new \local_setcheck\form\assign_template_form($actionurl, $cm, courseid: $courseid);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = $_POST;
