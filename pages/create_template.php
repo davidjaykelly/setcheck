@@ -36,21 +36,18 @@ require_once($CFG->dirroot . '/local/setcheck/classes/form/assign_template_form.
 
 // Get context from the pagecontextid parameter.
 $pagecontextid = optional_param('contextid', 0, PARAM_INT);
-$context = context::instance_by_id($pagecontextid);
+list($context, $course2, $cm2) = get_context_info_array($pagecontextid);
 
-require_login();
-
-// Set up the page context and title.
 $PAGE->set_url('/local/setcheck/pages/create_template.php');
-$PAGE->set_context($context);
-$PAGE->set_title(get_string('create_template', 'local_setcheck'));
-$PAGE->set_heading(get_string('create_template', 'local_setcheck'));
 $PAGE->add_body_class('create-template-page limitedwidth');
 $PAGE->requires->css('/local/setcheck/styles/styles.css');
 $PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
 
-// Check user's capability to create templates.
+require_login();
 require_capability('moodle/site:config', $context);
+$PAGE->set_context($context);
+$PAGE->set_title(get_string('create_template', 'local_setcheck'));
+$PAGE->set_heading(get_string('create_template', 'local_setcheck'));
 
 // Check if the context level is category or course.
 if ($context->contextlevel == CONTEXT_COURSECAT) {
@@ -69,85 +66,15 @@ $assignmentid = get_config('local_setcheck', 'assignmentid');
 $cm = null;
 
 if (!$assignmentid) {
-    // Get course ID from the config.
-    $courseid = get_config('local_setcheck', 'courseid');
-    $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
-
-    // Fetch the module ID for the 'assign' module.
-    $module = $DB->get_record('modules', ['name' => 'assign'], '*', MUST_EXIST);
-    $moduleid = $module->id; // Get the 'assign' module ID.
-
-    // Proceed to create the assignment inside the hidden course.
-    $moduleinfo = new stdClass();
-    $moduleinfo->modulename = 'assign';
-    $moduleinfo->module = $moduleid;
-    $moduleinfo->course = $courseid;
-    $moduleinfo->section = 0;
-    $moduleinfo->visible = 0;
-    // Assignment specific settings.
-    $moduleinfo->name = 'Template Assignment for Setcheck';
-    $moduleinfo->intro = 'This is the introductory text for the template assignment.'; // Required field.
-    $moduleinfo->introformat = 1; // HTML format for the intro.
-    $moduleinfo->duedate = time() + (7 * 24 * 60 * 60); // Set due date 1 week from now.
-    $moduleinfo->cutoffdate = time() + (14 * 24 * 60 * 60); // Set cutoff date 2 weeks from now.
-    $moduleinfo->allowsubmissionsfromdate = time(); // Allow submissions from now.
-    $moduleinfo->grade = 100; // Set the maximum grade.
-    // Ensure these required fields are not NULL.
-    $moduleinfo->submissiondrafts = 0; // Disable submission drafts, set to 1 to enable.
-    $moduleinfo->requiresubmissionstatement = 0; // No submission statement required.
-    $moduleinfo->sendnotifications = 0; // No notifications.
-    $moduleinfo->sendlatenotifications = 0; // No late notifications.
-    $moduleinfo->sendstudentnotifications = 1; // Enable student notifications.
-    // Make sure other values are not null.
-    $moduleinfo->gradingduedate = time() + (21 * 24 * 60 * 60); // Set grading due date 3 weeks from now.
-    $moduleinfo->teamsubmission = 0; // No team submissions.
-    $moduleinfo->requireallteammemberssubmit = 0; // No need for all team members to submit.
-    $moduleinfo->blindmarking = 0; // Disable blind marking.
-    $moduleinfo->attemptreopenmethod = 'none'; // No reopen attempts.
-    $moduleinfo->markingworkflow = 0; // Disable marking workflow.
-    $moduleinfo->markingallocation = 0; // Disable marking allocation.
-
-    $course = $DB->get_record('course', ['id' => $courseid]);  // Fetch the course object.
-
-    // Create & save the assignment.
-    $moduleinfo = add_moduleinfo($moduleinfo, $course);
-    $cmid = $moduleinfo->coursemodule;
-
-    // Store the assignment ID and course module ID.
-    $assignmentid = $moduleinfo->instance;
-    // Save IDs to the plugin config.
-    set_config('assignmentid', $assignmentid, 'local_setcheck');
-
-    // Fetch course module information for the newly created assignment.
-    $cm = get_coursemodule_from_id('assign', $cmid, $courseid, true, MUST_EXIST);
-    $cm->course = $courseid;
-    $cm->coursemodule = $cmid;
-    $cm->visible = 0;  // Set visibility, defaulting to visible if necessary.
-
+    // Create a dummy assignment inside the hidden course.
+    \local_setcheck\services\AssignmentService::create_assignment($courseid);
 } else {
     // Validate that the course module and assignment are still valid.
     $cm = $DB->get_record('course_modules', ['course' => $courseid, 'instance' => $assignmentid]);
-
-    if ($cm) {
-        $cm->coursemodule = $cm->id;  // Set the coursemodule property.
-        $cm->course = $courseid;       // Set the course property if it's not already set.
-        $cm->visible = $cm->visible ?? 0;  // Set visibility if not already set.
-        $cm->idnumber = '';
-        $cm->completiongradeitemnumber = -1; // No specific grade item for completion.
-        $cm->availability = json_encode([]); // No availability conditions.
-        $cm->deletioninprogress = 0; // Module is not in the process of being deleted.
-        $cm->lang = ''; // Default or unspecified language.
-
-        $course = $DB->get_record('course', ['id' => $courseid]);  // Fetch the course object.
-    } else {
-        // If the course module is broken or missing, reset the config.
-        set_config('courseid', null, 'local_setcheck');
-        set_config('assignmentid', null, 'local_setcheck');
-        redirect(new moodle_url('/local/setcheck/create_template.php'), 'Course module or assignment was invalid. Please refresh.');
-    }
-
-    $cmid = $cm->id; // Use the existing course module ID.
+    // Set the course module properties.
+    $course = \local_setcheck\services\AssignmentService::set_course_module_properties($cm, $courseid);
 }
+
 // Turn off debugging messages temporarily.
 $previousdebug = $CFG->debug;
 $CFG->debug = DEBUG_NONE;
@@ -158,6 +85,12 @@ $actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
 
 // Create the form with the required arguments.
 $mform = new \local_setcheck\form\assign_template_form($actionurl, $cm, courseid: $courseid);
+
+// Turn off debugging messages temporarily.
+$previousdebug = $CFG->debug;
+$CFG->debug = DEBUG_NONE;
+$PAGE->set_context($context); // Reset to category or course context as stored initially
+$CFG->debug = $previousdebug;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = $_POST;
@@ -237,7 +170,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
 } else {
+
     // If it's a GET request (when the page is loaded via a URL), just show the form without processing.
+    $PAGE->set_pagelayout('admin');
+    $PAGE->activityheader->disable();
+
     echo $OUTPUT->header();
     $mform->display(); // Display the form.
     echo $OUTPUT->footer();

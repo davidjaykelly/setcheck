@@ -45,6 +45,9 @@ require_login($course, false, $cm);
 require_capability('moodle/filter:manage', $context);
 $PAGE->set_context($context);
 
+$PAGE->set_title(get_string('manage_activity_templates', 'local_setcheck'));
+$PAGE->set_heading(get_string('manage_activity_templates', 'local_setcheck'));
+
 $PAGE->set_pagelayout('admin');
 $PAGE->activityheader->disable();
 echo $OUTPUT->header();
@@ -69,8 +72,6 @@ foreach (array_keys($templates) as $templateid) {
 
 $PAGE->set_title(get_string('manage_activity_templates', 'local_setcheck'));
 $PAGE->set_heading(get_string('manage_activity_templates', 'local_setcheck'));
-
-echo html_writer::tag('h2', get_string('manage_activity_templates', 'local_setcheck'));
 
 // Display the list of templates in a table.
 if (!empty($templates)) {

@@ -58,12 +58,9 @@ define(['jquery', "core/ajax"], function($) {
                 const queryParams = getQueryParams();
                 formData = {...formData, ...queryParams};
 
-                const baseUrl = M.cfg.wwwroot;
-                const url = baseUrl + '/local/setcheck/pages/create_template.php?';
-
                 // Submit the form data using AJAX
                 $.ajax({
-                    url: url,
+                    url: form.attr('action'),
                     method: 'POST',
                     data: formData,
                     success: function(response) {
