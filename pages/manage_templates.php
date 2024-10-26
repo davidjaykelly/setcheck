@@ -59,8 +59,12 @@ if ($context->contextlevel == CONTEXT_COURSECAT) {
     $templates = TemplateService::get_templates_for_category($categoryid);
 }
 if ($context->contextlevel == CONTEXT_COURSE) {
+    $categoryid = $context->instanceid;
     $courseid = $course->id;
-    $templates = TemplateService::get_templates_for_course($courseid);
+    $templatescat = TemplateService::get_templates_for_category_from_module($course, $categoryid);
+    $templatescourse = TemplateService::get_templates_for_course($courseid);
+
+    $templates = $templatescat + $templatescourse;
 }
 
 // Fetch full template details from the database.

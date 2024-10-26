@@ -177,12 +177,23 @@ class FormService {
      * @param \MoodleQuickForm $mform The form object.
      * @return void
      */
-    public static function add_button_array($mform) {
+    public static function add_button_array($mform, $pagecontextid) {
+        $contextid = $pagecontextid;
+        $redirecturl = new \moodle_url('/local/setcheck/pages/manage_templates.php',
+                [
+                    'contextid' => $contextid,
+                ]
+            );
+
         // Add a button array to the form (Save and Cancel buttons).
         $buttonarray = [];
         $buttonarray[] = $mform->createElement('button', 'save_template_button', get_string('save_template', 'local_setcheck'));
-        $buttonarray[] = $mform->createElement('cancel', 'cancel_template_button', get_string('cancel'));
-
+        $buttonarray[] = $mform->createElement(
+            'button',
+            'cancel_template_button',
+            get_string('cancel'),
+            ['type' => 'button', 'onclick' => 'window.location.href="'.$redirecturl->out(false).'"; return false;']
+        );
         // Add the group of buttons to the form.
         $mform->addGroup($buttonarray, 'buttonar', '', ' ', false);
         $mform->setType('template_html_ids', PARAM_RAW);

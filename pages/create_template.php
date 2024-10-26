@@ -84,12 +84,12 @@ $CFG->debug = $previousdebug;
 $actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
 
 // Create the form with the required arguments.
-$mform = new \local_setcheck\form\assign_template_form($actionurl, $cm, courseid: $courseid);
+$mform = new \local_setcheck\form\assign_template_form($actionurl, $cm, courseid: $courseid, pagecontextid: $pagecontextid);
 
 // Turn off debugging messages temporarily.
 $previousdebug = $CFG->debug;
 $CFG->debug = DEBUG_NONE;
-$PAGE->set_context($context); // Reset to category or course context as stored initially
+$PAGE->set_context($context);
 $CFG->debug = $previousdebug;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

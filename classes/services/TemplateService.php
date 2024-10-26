@@ -76,11 +76,11 @@ class TemplateService {
         global $DB;
 
         // Get the course category.
-        $category = \core_course_category::get($course->category);
-
+        $categoryid = $course->category;
+        $category = \core_course_category::get($categoryid);
         // Get all ancestor categories up to the root, and also get the current category.
         $categories = array_values($category->get_parents()); // Get all ancestor categories.
-        $categories[] = $categoryid; // Include the current category.
+        $categories[] = $categoryid; // Include the current category ID.
 
         // Retrieve templates for the current and ancestor categories.
         list($sql, $params) = $DB->get_in_or_equal($categories, SQL_PARAMS_NAMED);
@@ -104,6 +104,7 @@ class TemplateService {
         global $DB;
 
         // Fetch templates specifically assigned to the given course ID.
+        $templates = $DB->get_records('local_setcheck_templates', ['courseid' => $courseid], 'name ASC');
         $templates = $DB->get_records('local_setcheck_templates', ['courseid' => $courseid]);
 
         $templateoptions = [];

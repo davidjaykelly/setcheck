@@ -41,15 +41,21 @@ class assign_template_form extends moodleform {
     protected $courseid;
 
     /**
+     * @var object Context.
+     */
+    protected $pagecontextid;
+
+    /**
      * Constructor to accept course module and course ID.
      *
      * @param \moodle_url $actionurl URL for the form action.
      * @param object $cm Course module object.
      * @param int $courseid Course ID.
      */
-    public function __construct($actionurl, $cm, $courseid) {
+    public function __construct($actionurl, $cm, $courseid, $pagecontextid) {
         $this->cm = $cm;
         $this->courseid = $courseid;
+        $this->pagecontextid = $pagecontextid;
         parent::__construct($actionurl);
     }
 
@@ -70,6 +76,6 @@ class assign_template_form extends moodleform {
         \local_setcheck\services\FormService::remove_unwanted_elements($mform);
 
         // Add button array.
-        \local_setcheck\services\FormService::add_button_array($mform);
+        \local_setcheck\services\FormService::add_button_array($mform, $this->pagecontextid);
     }
 }

@@ -45,7 +45,7 @@ function local_setcheck_assignment_form_hook($mform) {
     $templatescat = TemplateService::get_templates_for_category_from_module($course, $categoryid);
     $templatescourse = TemplateService::get_templates_for_course($PAGE->course->id);
 
-    $templateoptions = array_merge($templatescat, $templatescourse);
+    $templateoptions = $templatescat + $templatescourse;
 
     // Add template selection dropdown at the top of the form.
     $mform->insertElementBefore(

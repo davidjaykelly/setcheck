@@ -4,7 +4,6 @@ define(['jquery', "core/ajax"], function($) {
             const formElements = $('#create_template_form input, #create_template_form select, #create_template_form textarea');
             const form = $('#create_template_form');
             const saveButton = form.find('#id_save_template_button'); // Update this to the correct ID
-            const cancelButton = form.find('#id_cancel_template_button'); // Cancel button
 
             // Get the current URL, including query parameters
             // const currentUrlWithParams = window.location.href;
@@ -76,12 +75,6 @@ define(['jquery', "core/ajax"], function($) {
                         console.error('An error occurred:', error);
                     }
                 });
-            });
-
-            // Handle cancel button click.
-            cancelButton.on('click', function(event) {
-                event.preventDefault(); // Prevent the default action
-                window.location.href = M.cfg.wwwroot + '/local/setcheck/pages/manage_templates.php';
             });
 
             /**
