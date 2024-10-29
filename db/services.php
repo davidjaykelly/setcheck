@@ -26,12 +26,20 @@ defined('MOODLE_INTERNAL') || die();
 
 $functions = [
     'local_setcheck_get_template' => [
-        'classname'    => 'local_setcheck\external',
-        'methodname'   => 'get_template',
-        'classpath'    => 'local/setcheck/classes/external.php',
-        'description'  => 'Get template data by template ID',
-        'type'         => 'read',
-        'ajax'         => true,
+        'classname'   => 'local_setcheck\external\get_template',
+        'methodname'  => 'get_template',
+        'classpath'   => 'local/setcheck/externallib.php',
+        'description' => 'Retrieve templates for a specific context',
+        'type'        => 'read',
+        'ajax'        => true,
         'capabilities' => 'moodle/site:config',
+    ],
+];
+
+$services = [
+    'Setcheck Service' => [
+        'functions' => ['local_setcheck_get_template'],
+        'restrictedusers' => 0,
+        'enabled' => 1,
     ],
 ];

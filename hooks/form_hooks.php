@@ -45,7 +45,8 @@ function local_setcheck_assignment_form_hook($mform) {
     $templatescat = TemplateService::get_templates_for_category_from_module($course, $categoryid);
     $templatescourse = TemplateService::get_templates_for_course($PAGE->course->id);
 
-    $templateoptions = $templatescat + $templatescourse;
+    // Merge templates into an associative array.
+    $templates = $templatescat + $templatescourse;
 
     // Add template selection dropdown at the top of the form.
     $mform->insertElementBefore(
@@ -53,9 +54,14 @@ function local_setcheck_assignment_form_hook($mform) {
         'general'
     );
 
+    // Populate $option array for createElement.
+    $option = [0 => get_string('select_template_option', 'local_setcheck')];
+    foreach ($templates as $id => $name) {
+        $option[$id] = $name;
+    }
+
     // Create the dropdown select element.
-    $select = $mform->createElement('select', 'setcheck_template', get_string('select_template', 'local_setcheck'),
-        [0 => get_string('select_template_option', 'local_setcheck')] + $templateoptions);
+    $select = $mform->createElement('select', 'setcheck_template', get_string('select_template', 'local_setcheck'), $option);
 
     $mform->insertElementBefore($select, 'general');
     $mform->addHelpButton('setcheck_template', 'select_template', 'local_setcheck');
@@ -64,6 +70,18 @@ function local_setcheck_assignment_form_hook($mform) {
     $applybutton = $mform->createElement('button', 'apply_setcheck_template', get_string('apply_template', 'local_setcheck'));
     $mform->insertElementBefore($applybutton, 'general');
     $mform->disabledIf('apply_setcheck_template', 'setcheck_template', 'eq', 0);
+
+    // Add JavaScript to set data-templateid attributes.
+    $PAGE->requires->js_amd_inline("
+        require(['jquery'], function($) {
+            $('#id_setcheck_template option').each(function() {
+                var value = $(this).val();
+                if (value && value !== '0') {
+                    $(this).attr('data-templateid', value);
+                }
+            });
+        });
+    ");
 
     // Add JavaScript for template application logic.
     // The JS will handle clicking the "Apply Template" button without submitting the form.
@@ -80,6 +98,6 @@ function local_setcheck_assignment_form_hook($mform) {
  * @param stdClass $data The form data submitted by the user
  * @throws dml_exception If an error occurs while accessing the database
  */
-function local_setcheck_assignment_form_submit($data) {
-    exit;
-}
+// function local_setcheck_assignment_form_submit($data) {
+//     exit;
+// }

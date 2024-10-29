@@ -1,8 +1,8 @@
 define(['jquery', "core/ajax"], function($) {
     return {
         init: function() {
-            const formElements = $('#create_template_form input, #create_template_form select, #create_template_form textarea');
-            const form = $('#create_template_form');
+            const formElements = $('.mform input, .mform select, mform textarea');
+            const form = $('.mform');
             const saveButton = form.find('#id_save_template_button'); // Update this to the correct ID
 
             // Get the current URL, including query parameters
@@ -37,7 +37,13 @@ define(['jquery', "core/ajax"], function($) {
                 return params;
             }
 
-            saveButton.on('click', function() {
+            form.on('submit', function(e) {
+                e.preventDefault();
+            });
+
+            saveButton.on('click', function(e) {
+                e.preventDefault();
+                console.log("Custom save button clicked. Default form submission prevented.");
                 let formData = {};
 
                 // Gather only touched elements
@@ -59,7 +65,7 @@ define(['jquery', "core/ajax"], function($) {
 
                 // Submit the form data using AJAX
                 $.ajax({
-                    url: form.attr('action'),
+                    url: '/moodle/local/setcheck/pages/create_template.php',
                     method: 'POST',
                     data: formData,
                     success: function(response) {

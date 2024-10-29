@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Installation procedure for the Setcheck plugin.
+ *
+ * @package    local_setcheck
+ * @copyright  2024 David Kelly
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/course/lib.php');
@@ -29,7 +37,7 @@ require_once($CFG->libdir . '/adminlib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 function xmldb_local_setcheck_install() {
-    global $DB;
+    global $DB, $CFG;
 
     // Create the hidden course for templates if it doesn't exist.
     $courseid = get_config('local_setcheck', 'courseid');

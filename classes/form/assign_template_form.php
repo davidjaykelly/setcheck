@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * UPDATE
+ * Custom assignment form for local_setcheck plugin.
  *
  * @package    local_setcheck
  * @copyright  2024 David Kelly
@@ -24,12 +24,15 @@
 
 namespace local_setcheck\form;
 
-use moodleform;
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/mod/assign/mod_form.php');
+use moodle_url;
 
 /**
- * Form for creating assignment templates in local_setcheck plugin.
+ * Extended form for creating assignment templates in local_setcheck plugin.
  */
-class assign_template_form extends moodleform {
+class extended_assign_form extends \mod_assign_mod_form {
     /**
      * @var object Course module object.
      */
@@ -41,41 +44,114 @@ class assign_template_form extends moodleform {
     protected $courseid;
 
     /**
-     * @var object Context.
+     * @var object Context ID.
      */
     protected $pagecontextid;
 
     /**
-     * Constructor to accept course module and course ID.
+     * Constructor to accept course module, course ID, and page context.
      *
      * @param \moodle_url $actionurl URL for the form action.
      * @param object $cm Course module object.
      * @param int $courseid Course ID.
+     * @param int $pagecontextid Context ID for the page.
      */
     public function __construct($actionurl, $cm, $courseid, $pagecontextid) {
+        global $DB;
+
         $this->cm = $cm;
         $this->courseid = $courseid;
         $this->pagecontextid = $pagecontextid;
-        parent::__construct($actionurl);
+        $cm->modname = 'assign'; // Set the module name.
+
+        // Fetch required data for moodleform_mod constructor.
+        $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+        $current = new \stdClass(); // Default to an empty stdClass for `current`.
+        $section = 0; // Default section value.
+        // Populate $current with necessary properties to suppress warnings.
+        $current = new \stdClass();
+        $current->coursemodule = $cm->id ?? null; // Ensure coursemodule is set.
+        $current->course = $course->id; // Set course ID.
+        $current->id = $cm->instance ?? null; // Instance ID if available.
+        $current->modname = 'assign'; // Module name expected in moodleform_mod.
+        $current->instance = $cm->instance ?? null; // Instance ID if available.
+
+        // Set the module name manually to bypass Moodle's validation.
+        $this->_modname = 'assign';
+
+        parent::__construct($current, $section, $cm, $course);
     }
 
     /**
-     * Defines the form structure.
+     * Define the form structure and include template-specific fields.
      */
     public function definition() {
-        $mform = $this->_form;
-        $mform->updateAttributes(['id' => 'create_template_form']);
+        parent::definition();
 
-        // Add template fields.
+        $mform = $this->_form;
+
+        \local_setcheck\services\FormService::add_button_array($mform, $this->pagecontextid);
+    }
+
+    /**
+     * Called to modify the form after the data is set.
+     */
+    public function definition_after_data() {
+        // Call the parent method to handle standard functionality.
+        parent::definition_after_data();
+
+        $mform = $this->_form;
+
+        // Now add the template fields under the 'template_settings' header.
         \local_setcheck\services\FormService::add_template_fields($mform);
 
-        // Add assignment form fields dynamically.
-        \local_setcheck\services\FormService::add_assign_form_fields($mform, $this->courseid, $this->cm);
+        // Remove specific elements as needed.
+        $elementstoremove = [
+            'general',
+            'name',         // Assignment name.
+            'intro',        // Introduction/Description.
+            'introattachments', // Attachments.
+            'submissionattachments', // Attachments.
+            'pageheader',   // Page header (if applicable).
+            'introeditor',  // Intro editor if present.
+            'showdescription',
+            'activityeditor',
+            'tagshdr',
+            'tags',
+            'competenciessection',
+            'competencies',
+            'competency_rule',
+            // 'override_grade',
+            // '_qf__mod_assign_mod_form',
+            // 'modstandardelshdr',
+            // 'visible',
+            // 'cmidnumber',
+            // 'lang',
+            // 'groupmode',
+            // 'groupingid',
+            // 'restrictgroupbutton',
+            // 'availabilityconditionsheader',
+            // 'availabilityconditionsjson',
+            // 'course',
+            // 'coursemodule',
+            // 'section',
+            // 'module',
+            // 'modulename',
+            // 'instance',
+            // 'add',
+            // 'update',
+            // 'return',
+            // 'sr',
+            // 'beforemod',
+            // 'showonly',
+            'coursecontentnotification',
+            'buttonar',
+        ];
 
-        // Remove unwanted elements.
-        \local_setcheck\services\FormService::remove_unwanted_elements($mform);
-
-        // Add button array.
-        \local_setcheck\services\FormService::add_button_array($mform, $this->pagecontextid);
+        foreach ($elementstoremove as $element) {
+            if ($mform->elementExists($element)) {
+                $mform->removeElement($element);
+            }
+        }
     }
 }

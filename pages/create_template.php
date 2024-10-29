@@ -67,7 +67,9 @@ $cm = null;
 
 if (!$assignmentid) {
     // Create a dummy assignment inside the hidden course.
-    \local_setcheck\services\AssignmentService::create_assignment($courseid);
+    $assignmentid = \local_setcheck\services\AssignmentService::create_assignment($courseid);
+    $cm = $DB->get_record('course_modules', ['course' => $courseid, 'instance' => $assignmentid]);
+    $course = \local_setcheck\services\AssignmentService::set_course_module_properties($cm, $courseid);
 } else {
     // Validate that the course module and assignment are still valid.
     $cm = $DB->get_record('course_modules', ['course' => $courseid, 'instance' => $assignmentid]);
@@ -84,7 +86,7 @@ $CFG->debug = $previousdebug;
 $actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
 
 // Create the form with the required arguments.
-$mform = new \local_setcheck\form\assign_template_form($actionurl, $cm, courseid: $courseid, pagecontextid: $pagecontextid);
+$mform = new \local_setcheck\form\extended_assign_form($actionurl, $cm, courseid: $courseid, pagecontextid: $pagecontextid);
 
 // Turn off debugging messages temporarily.
 $previousdebug = $CFG->debug;

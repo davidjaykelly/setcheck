@@ -73,20 +73,3 @@ function local_setcheck_coursemodule_standard_elements($formwrapper, $mform) {
         local_setcheck_assignment_form_hook($mform);
     }
 }
-
-/**
- * Summary of local_setcheck_coursemodule_edit_post_actions
- * @param mixed $data
- * @return mixed
- */
-function local_setcheck_coursemodule_edit_post_actions($data) {
-    global $PAGE;
-    if ($PAGE->pagetype !== 'mod-assign-mod' || !isset($data->modulename) || $data->modulename !== 'assign') {
-        return $data; // Do nothing if it's not related to assignment.
-    }
-
-    require_once(__DIR__ . '/hooks/form_hooks.php');
-    local_setcheck_assignment_form_submit($data);
-
-    return $data;
-}

@@ -28,126 +28,15 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/mod/assign/mod_form.php');
 require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->dirroot . '/mod/assign/locallib.php');
+
+use mod_assign_mod_form;
+use moodle_url;
 
 /**
  * Helper class to manage the dynamic loading of assignment form fields.
  */
 class FormService {
-
-    /**
-     * Add assignment form fields dynamically using reflection.
-     *
-     * @param \MoodleQuickForm $mform The form object.
-     * @param int $courseid The course ID.
-     * @param int $cmid The course module ID.
-     * @param array $templatehtmlids Array to store HTML IDs of form elements.
-     * @return void
-     */
-    public static function add_assign_form_fields($mform, $courseid, $cm) {
-        global $DB;
-
-        // Fetch data needed for the constructor of mod_assign_mod_form.
-        $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
-        $cm = get_coursemodule_from_id('assign', $cm->id, $courseid);
-
-        $cm->idnumber = ''; // Set to empty string.
-        $cm->completiongradeitemnumber = -1; // Set to -1.
-        $cm->availability = '{}'; // Set to an empty JSON object.
-        $cm->lang = ''; // Set to an empty string.
-        $cm->section = 0; // Set to visible.
-
-        // Fake data for $current if needed.
-        $current = new \stdClass();
-        $current->instance = 0; // Fake or retrieve current instance data if needed.
-        $current->course = $course->id; // Add the course ID.
-        $current->coursemodule = ''; // Add the course module ID.
-        $current->visible = isset($cm->visible) ? $cm->visible : 1;
-
-        // Instantiate the original assignment form.
-        $assignform = new \mod_assign_mod_form($current, $cm->section, $cm, $course);
-
-        // Use reflection to access the protected property _form (where the elements are stored).
-        $reflection = new \ReflectionClass($assignform);
-        $formproperty = $reflection->getProperty('_form');
-        $formproperty->setAccessible(true);
-        $originalform = $formproperty->getValue($assignform);
-
-        // Adding a type definition for the 'assignsubmission_comments_enabled' element.
-        $mform->setType('assignsubmission_comments_enabled', PARAM_INT);
-
-        // Adding a type definition for the 'assignsubmission_onlinetext_wordlimit' element.
-        $mform->setType('assignsubmission_onlinetext_wordlimit', PARAM_INT);
-
-        foreach ($originalform->_elements as $element) {
-            $elementname = $element->getName();
-            $mform->addElement($element);
-            $mform->setType($elementname, PARAM_RAW);
-
-        }
-    }
-
-    /**
-     * Remove unwanted elements from a form.
-     *
-     * @param \MoodleQuickForm $mform The form object.
-     * @param array $removedelemenentsarray Array of elements to be removed.
-     * @return void
-     */
-    public static function remove_unwanted_elements($mform) {
-        $elementstoremove = [
-            'general',
-            'name',         // Assignment name.
-            'intro',        // Introduction/Description.
-            'introattachments', // Attachments.
-            'submissionattachments', // Attachments.
-            'pageheader',   // Page header (if applicable).
-            'introeditor',  // Intro editor if present.
-            'showdescription',
-            'activityeditor',
-            'competenciessection',
-            'tagshdr',
-            'tags',
-            'buttonar',
-            'competenciessection',
-            'competencies',
-            'competency_rule',
-            'override_grade',
-            'restrictgroupbutton',
-            'availabilityconditionsheader',
-            'availabilityconditionsjson',
-            '_qf__mod_assign_mod_form',
-            'modstandardelshdr',
-            'visible',
-            'cmidnumber',
-            'lang',
-            'groupmode',
-            'groupingid',
-            'restrictgroupbutton',
-            'availabilityconditionsheader',
-            'availabilityconditionsjson',
-            'course',
-            'coursemodule',
-            'section',
-            'module',
-            'modulename',
-            'instance',
-            'add',
-            'update',
-            'return',
-            'sr',
-            'beforemod',
-            'showonly',
-            'coursecontentnotification',
-        ];
-
-        // Iterate over each element name and remove it if it exists.
-        foreach ($elementstoremove as $elementname) {
-            if ($mform->elementExists($elementname)) {
-                $mform->removeElement($elementname);
-            }
-        }
-    }
-
     /**
      * Adds template fields to the form.
      *
@@ -155,17 +44,30 @@ class FormService {
      * @return void
      */
     public static function add_template_fields($mform) {
+        $mform->insertElementBefore(
+            $mform->createElement('header', 'template_settings', get_string('template_settings', 'local_setcheck')),
+            'general'
+        );
+
         // Add the template name field.
-        $mform->addElement('text', 'template_name', get_string('template_name', 'local_setcheck'));
+        $mform->insertElementBefore(
+            $mform->createElement('text', 'template_name', get_string('template_name', 'local_setcheck')),
+            'general'
+        );
+        // $mform->addElement('text', 'template_name', get_string('template_name', 'local_setcheck'));
         $mform->setType('template_name', PARAM_TEXT);
         $mform->addRule('template_name', get_string('required', 'local_setcheck'), 'required', null, 'server');
         $mform->setDefault('template_name', '');
 
         // Add the template description field.
-        $mform->addElement(
-            'editor', 'template_description',
-            get_string('template_description', 'local_setcheck')
-        );
+        $mform->insertElementBefore(
+            $mform->createElement(
+                'editor', 'template_description',
+                get_string('template_description', 'local_setcheck')
+            ),
+            'general'
+            );
+
         $mform->setType('template_description', PARAM_RAW);
         $mform->setDefault('template_description', '');
 
@@ -179,7 +81,7 @@ class FormService {
      */
     public static function add_button_array($mform, $pagecontextid) {
         $contextid = $pagecontextid;
-        $redirecturl = new \moodle_url('/local/setcheck/pages/manage_templates.php',
+        $redirecturl = new moodle_url('/local/setcheck/pages/manage_templates.php',
                 [
                     'contextid' => $contextid,
                 ]
@@ -199,5 +101,39 @@ class FormService {
         $mform->setType('template_html_ids', PARAM_RAW);
 
         $mform->closeHeaderBefore('buttonar');
+    }
+
+    /**
+     * Sets up a real assignment form with custom submit buttons.
+     *
+     * @param moodle_url $actionurl The action URL for the form.
+     * @param int $courseid The course ID.
+     * @param int $contextid The context ID.
+     * @return mod_assign_mod_form The modified assignment form.
+     */
+    public static function setup_real_assignment_form($actionurl, $courseid) {
+        // Fetch context information.
+        $context = \context_course::instance($courseid);
+
+        // Set up a dummy course module if required.
+        $cm = new \stdClass();
+        $cm->course = $courseid;
+
+        // Instantiate the assignment form.
+        $mform = new mod_assign_mod_form($actionurl, $cm, $courseid, $context);
+    }
+
+    /**
+     * Removes unwanted elements from a form.
+     * @param \MoodleQuickForm $mform The form object.
+     * @param array $elements_to_remove Array of elements to be removed.
+     * @return void
+     */
+    public static function remove_elements_by_name($mform, $elementstoremove) {
+        foreach ($elementstoremove as $elementname) {
+            if ($mform->elementExists($elementname)) {
+                $mform->removeElement($elementname);
+            }
+        }
     }
 }

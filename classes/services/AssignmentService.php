@@ -24,6 +24,10 @@
 
 namespace local_setcheck\services;
 
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/mod/assign/mod_form.php');
+
 /**
  * Helper class to manage the creation of dummy assignments.
  */
@@ -32,7 +36,7 @@ class AssignmentService {
     /**
      * Create a dummy assignment inside a hidden course.
      * @param int $courseid The course ID.
-     * @return void
+     * @return $assignmentid The assignment ID.
      */
     public static function create_assignment($courseid) {
         global $DB;
@@ -41,54 +45,42 @@ class AssignmentService {
 
         // Fetch the module ID for the 'assign' module.
         $module = $DB->get_record('modules', ['name' => 'assign'], '*', MUST_EXIST);
-        $moduleid = $module->id; // Get the 'assign' module ID.
+        $moduleid = $module->id;
 
-        // Proceed to create the assignment inside the hidden course.
+        // Initialize moduleinfo with basic settings.
         $moduleinfo = new \stdClass();
         $moduleinfo->modulename = 'assign';
         $moduleinfo->module = $moduleid;
         $moduleinfo->course = $courseid;
         $moduleinfo->section = 0;
         $moduleinfo->visible = 0;
-        // Assignment specific settings.
         $moduleinfo->name = 'Template Assignment for Setcheck';
-        $moduleinfo->intro = 'This is the introductory text for the template assignment.'; // Required field.
-        $moduleinfo->introformat = 1; // HTML format for the intro.
-        $moduleinfo->duedate = time() + (7 * 24 * 60 * 60); // Set due date 1 week from now.
-        $moduleinfo->cutoffdate = time() + (14 * 24 * 60 * 60); // Set cutoff date 2 weeks from now.
-        $moduleinfo->allowsubmissionsfromdate = time(); // Allow submissions from now.
-        $moduleinfo->grade = 100; // Set the maximum grade.
-        // Ensure these required fields are not NULL.
-        $moduleinfo->submissiondrafts = 0; // Disable submission drafts, set to 1 to enable.
-        $moduleinfo->requiresubmissionstatement = 0; // No submission statement required.
-        $moduleinfo->sendnotifications = 0; // No notifications.
-        $moduleinfo->sendlatenotifications = 0; // No late notifications.
-        $moduleinfo->sendstudentnotifications = 1; // Enable student notifications.
-        // Make sure other values are not null.
-        $moduleinfo->gradingduedate = time() + (21 * 24 * 60 * 60); // Set grading due date 3 weeks from now.
-        $moduleinfo->teamsubmission = 0; // No team submissions.
-        $moduleinfo->requireallteammemberssubmit = 0; // No need for all team members to submit.
-        $moduleinfo->blindmarking = 0; // Disable blind marking.
-        $moduleinfo->attemptreopenmethod = 'none'; // No reopen attempts.
-        $moduleinfo->markingworkflow = 0; // Disable marking workflow.
-        $moduleinfo->markingallocation = 0; // Disable marking allocation.
+        $moduleinfo->intro = 'This is the introductory text for the template assignment.';
+        $moduleinfo->introformat = 1;
+        $moduleinfo->grade = 100;
 
-        $course = $DB->get_record('course', ['id' => $courseid]);  // Fetch the course object.
+        // Retrieve and apply assignment config defaults.
+        $assignconfig = get_config('assign');
+        foreach ($assignconfig as $key => $value) {
+            if (!isset($moduleinfo->$key)) {
+                $moduleinfo->$key = $value;
+            }
+        }
 
-        // Create & save the assignment.
+        // Manually apply date-based settings, as these are typically specific to each assignment instance.
+        $moduleinfo->allowsubmissionsfromdate = time();
+        $moduleinfo->duedate = time() + (7 * 24 * 60 * 60);  // 1 week from now.
+        $moduleinfo->cutoffdate = time() + (14 * 24 * 60 * 60);  // 2 weeks from now.
+
+        // Create and save the assignment instance in the database.
+        $course = $DB->get_record('course', ['id' => $courseid]);
         $moduleinfo = add_moduleinfo($moduleinfo, $course);
-        $cmid = $moduleinfo->coursemodule;
-
-        // Store the assignment ID and course module ID.
         $assignmentid = $moduleinfo->instance;
-        // Save IDs to the plugin config.
+
+        // Store the assignment ID in the plugin config for reference.
         set_config('assignmentid', $assignmentid, 'local_setcheck');
 
-        // Fetch course module information for the newly created assignment.
-        $cm = get_coursemodule_from_id('assign', $cmid, $courseid, true, MUST_EXIST);
-        $cm->course = $courseid;
-        $cm->coursemodule = $cmid;
-        $cm->visible = 0;  // Set visibility, defaulting to visible if necessary.
+        return $assignmentid;
     }
 
     /**

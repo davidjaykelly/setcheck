@@ -133,4 +133,52 @@ class TemplateService {
 
         return $descendants;
     }
+
+    /**
+     * Fetch templates based on a specific category or course context.
+     *
+     * @param int $contextid The context ID for which to retrieve templates.
+     * @return array Array of template data.
+     */
+    public static function get_templates($contextid, $templateid) {
+        global $DB;
+
+        // Example query to fetch templates based on context
+        $templates = $DB->get_records('local_setcheck_templates', ['contextid' => $contextid]);
+
+        // Prepare data to return.
+        $templatedata = [];
+        foreach ($templates as $template) {
+            $templatedata[] = [
+                'id' => $template->id,
+                'name' => $template->name,
+                'description' => $template->description,
+                'settings' => json_decode($template->settings, true), // Assume settings is JSON
+            ];
+        }
+
+        return $templatedata;
+    }
+
+    /**
+     * Fetch template based on template ID.
+     *
+     * @param int $contextid The context ID for which to retrieve templates.
+     * @return array Array of template data.
+     */
+    public static function get_template($templateid) {
+        global $DB;
+
+        // Fetch template based on template ID.
+        $template = $DB->get_record('local_setcheck_templates', ['id' => $templateid]);
+
+        $templatedata[] = [
+            'id' => $template->id,
+            'name' => $template->name,
+            'description' => $template->description,
+            'settings' => json_decode($template->settings, true),
+        ];
+
+        return $templatedata;
+    }
 }
