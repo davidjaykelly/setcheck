@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_setcheck';
-$plugin->version = 202410210013;
+$plugin->version = 202410280008;
 $plugin->requires = 2022112800; // Moodle 4.1 and up.
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->release = 'v0.5';

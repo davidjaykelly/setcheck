@@ -23,28 +23,43 @@
  */
 
 /**
- * Extend the Moodle navigation for the plugin.
- *
- * @param global_navigation $navigation Navigation object.
+ * Summary of local_setcheck_extend_navigation
+ * @param mixed $navigation
  * @return void
  */
-function local_setcheck_extend_navigation(global_navigation $navigation) {
-    $node = $navigation->add(
-        get_string('pluginname', 'local_setcheck'),
-        new moodle_url('/local/setcheck/index.php'),
-        navigation_node::TYPE_CUSTOM,
-        null,
-        null,
-        new pix_icon('i/settings', '')
-    );
-    $node->showinflatnavigation = true;
+function local_setcheck_extend_navigation($navigation) {
+    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    local_setcheck_hook_navigation($navigation);
 }
 
 /**
- * Hook function to extend assignment settings form.
- *
- * @param MoodleQuickForm $formwrapper The form wrapper
- * @param MoodleQuickForm $mform The actual form
+ * Summary of local_setcheck_extend_navigation_category_settings
+ * @param mixed $navigation
+ * @param mixed $coursecategorycontext
+ * @return void
+ */
+function local_setcheck_extend_navigation_category_settings($navigation, $coursecategorycontext) {
+    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    local_setcheck_hook_navigation_category_settings($navigation, $coursecategorycontext);
+}
+
+/**
+ * Summary of local_setcheck_extend_navigation_course
+ * @param mixed $navigation
+ * @param mixed $course
+ * @param mixed $coursecontext
+ * @return void
+ */
+function local_setcheck_extend_navigation_course($navigation, $course, $coursecontext) {
+    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    local_setcheck_hook_navigation_course($navigation, $course, $coursecontext);
+}
+
+/**
+ * Summary of local_setcheck_coursemodule_standard_elements
+ * @param mixed $formwrapper
+ * @param mixed $mform
+ * @return void
  */
 function local_setcheck_coursemodule_standard_elements($formwrapper, $mform) {
     global $PAGE;
@@ -54,24 +69,7 @@ function local_setcheck_coursemodule_standard_elements($formwrapper, $mform) {
 
     $current = $formwrapper->get_current();
     if (isset($current->modulename) && $current->modulename === 'assign') {
-        require_once(__DIR__ . '/assignment_form_hook.php');
+        require_once(__DIR__ . '/hooks/form_hooks.php');
         local_setcheck_assignment_form_hook($mform);
     }
-}
-
-/**
- * Hook function to handle assignment settings form submission.
- *
- * @param stdClass $data Form data
- */
-function local_setcheck_coursemodule_edit_post_actions($data) {
-    global $PAGE;
-    if ($PAGE->pagetype !== 'mod-assign-mod' || !isset($data->modulename) || $data->modulename !== 'assign') {
-        return $data; // Do nothing if it's not related to assignment.
-    }
-
-    require_once(__DIR__ . '/assignment_form_hook.php');
-    local_setcheck_assignment_form_submit($data);
-
-    return $data;
 }
