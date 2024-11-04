@@ -31,8 +31,8 @@ require_once($CFG->dirroot . '/mod/assign/lib.php');
 require_once($CFG->dirroot . '/course/modlib.php');
 require_once($CFG->dirroot . '/mod/assign/mod_form.php');
 require_once($CFG->libdir . '/formslib.php');
-require_once($CFG->dirroot . '/local/setcheck/classes/form/assign_template_form.php');
 
+use local_setcheck\forms\extended_assign_form;
 
 // Get context from the pagecontextid parameter.
 $pagecontextid = optional_param('contextid', 0, PARAM_INT);
@@ -40,7 +40,7 @@ list($context, $course2, $cm2) = get_context_info_array($pagecontextid);
 
 $PAGE->set_url('/local/setcheck/pages/create_template.php');
 $PAGE->add_body_class('create-template-page limitedwidth');
-$PAGE->requires->css('/local/setcheck/styles/styles.css');
+$PAGE->requires->css('/local/setcheck/assets/styles/styles.css');
 $PAGE->requires->js_call_amd('local_setcheck/create_template', 'init');
 
 require_login();
@@ -86,7 +86,7 @@ $CFG->debug = $previousdebug;
 $actionurl = new moodle_url('/local/setcheck/pages/create_template.php');
 
 // Create the form with the required arguments.
-$mform = new \local_setcheck\form\extended_assign_form($actionurl, $cm, courseid: $courseid, pagecontextid: $pagecontextid);
+$mform = new extended_assign_form($actionurl, $cm, courseid: $courseid, pagecontextid: $pagecontextid);
 
 // Turn off debugging messages temporarily.
 $previousdebug = $CFG->debug;
@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $settings[] = [
                     'setting_name' => $settingname,
                     'value' => $value,
-                    'html_id' => $htmlid,
+                    'html_id' => "#{$htmlid}",
                 ];
             }
         }

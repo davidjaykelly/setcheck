@@ -28,7 +28,7 @@
  * @return void
  */
 function local_setcheck_extend_navigation($navigation) {
-    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    require_once(__DIR__ . '/classes/hooks/navigation_hooks.php');
     local_setcheck_hook_navigation($navigation);
 }
 
@@ -39,7 +39,7 @@ function local_setcheck_extend_navigation($navigation) {
  * @return void
  */
 function local_setcheck_extend_navigation_category_settings($navigation, $coursecategorycontext) {
-    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    require_once(__DIR__ . '/classes/hooks/navigation_hooks.php');
     local_setcheck_hook_navigation_category_settings($navigation, $coursecategorycontext);
 }
 
@@ -51,7 +51,7 @@ function local_setcheck_extend_navigation_category_settings($navigation, $course
  * @return void
  */
 function local_setcheck_extend_navigation_course($navigation, $course, $coursecontext) {
-    require_once(__DIR__ . '/hooks/navigation_hooks.php');
+    require_once(__DIR__ . '/classes/hooks/navigation_hooks.php');
     local_setcheck_hook_navigation_course($navigation, $course, $coursecontext);
 }
 
@@ -69,7 +69,7 @@ function local_setcheck_coursemodule_standard_elements($formwrapper, $mform) {
 
     $current = $formwrapper->get_current();
     if (isset($current->modulename) && $current->modulename === 'assign') {
-        require_once(__DIR__ . '/hooks/form_hooks.php');
+        require_once(__DIR__ . '/classes/hooks/form_hooks.php');
         local_setcheck_assignment_form_hook($mform);
     }
 }

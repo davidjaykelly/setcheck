@@ -54,7 +54,6 @@ class FormService {
             $mform->createElement('text', 'template_name', get_string('template_name', 'local_setcheck')),
             'general'
         );
-        // $mform->addElement('text', 'template_name', get_string('template_name', 'local_setcheck'));
         $mform->setType('template_name', PARAM_TEXT);
         $mform->addRule('template_name', get_string('required', 'local_setcheck'), 'required', null, 'server');
         $mform->setDefault('template_name', '');
@@ -70,7 +69,6 @@ class FormService {
 
         $mform->setType('template_description', PARAM_RAW);
         $mform->setDefault('template_description', '');
-
     }
 
     /**
@@ -121,6 +119,8 @@ class FormService {
 
         // Instantiate the assignment form.
         $mform = new mod_assign_mod_form($actionurl, $cm, $courseid, $context);
+
+        return $mform;
     }
 
     /**

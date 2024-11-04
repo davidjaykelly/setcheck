@@ -87,17 +87,3 @@ function local_setcheck_assignment_form_hook($mform) {
     // The JS will handle clicking the "Apply Template" button without submitting the form.
     $PAGE->requires->js_call_amd('local_setcheck/apply_template', 'init', []);
 }
-
-/**
- * Hook to handle template application when the assignment form is submitted.
- *
- * This function handles the form submission when the "Apply Template" button is clicked.
- * It retrieves the selected template and applies it to the assignment.
- *
- * @package    local_setcheck
- * @param stdClass $data The form data submitted by the user
- * @throws dml_exception If an error occurs while accessing the database
- */
-// function local_setcheck_assignment_form_submit($data) {
-//     exit;
-// }

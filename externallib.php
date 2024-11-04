@@ -87,10 +87,10 @@ class get_template extends external_api {
                 'id' => new external_value(PARAM_INT, 'Template ID'),
                 'name' => new external_value(PARAM_TEXT, 'Template name'),
                 'description' => new external_value(PARAM_TEXT, 'Template description'),
-                'settings' => new external_multiple_structure( // Define settings as a nested structure
+                'settings' => new external_multiple_structure(
                     new external_single_structure([
                         'html_id' => new external_value(PARAM_TEXT, 'HTML ID of the form field'),
-                        'value' => new external_value(PARAM_RAW, 'Value of the form field')
+                        'value' => new external_value(PARAM_RAW, 'Value of the form field'),
                     ])
                 ),
             ])

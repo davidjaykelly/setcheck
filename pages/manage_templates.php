@@ -38,7 +38,7 @@ list($context, $course, $cm) = get_context_info_array($contextid);
 // Set up the page context and title.
 $PAGE->set_url('/local/setcheck/pages/manage_template.php');
 $PAGE->add_body_class('manage-template-page limitedwidth');
-$PAGE->requires->css('/local/setcheck/styles/styles.css');
+$PAGE->requires->css('/local/setcheck/assets/styles/styles.css');
 
 // Check login and permissions.
 require_login($course, false, $cm);
@@ -54,20 +54,19 @@ echo $OUTPUT->header();
 
 // Fetch templates based on the current context.
 $templates = [];
+
 if ($context->contextlevel == CONTEXT_COURSECAT) {
     $categoryid = $context->instanceid;
     $templates = TemplateService::get_templates_for_category($categoryid);
 }
 if ($context->contextlevel == CONTEXT_COURSE) {
     $categoryid = $context->instanceid;
-    $courseid = $course->id;
     $templatescat = TemplateService::get_templates_for_category_from_module($course, $categoryid);
-    $templatescourse = TemplateService::get_templates_for_course($courseid);
-
+    $templatescourse = TemplateService::get_templates_for_course($course->id);
     $templates = $templatescat + $templatescourse;
 }
 
-// Fetch full template details from the database.
+// Iterate over each template ID and fetch the full template data.
 $fulltemplates = [];
 foreach (array_keys($templates) as $templateid) {
     $fulltemplate = $DB->get_record('local_setcheck_templates', ['id' => $templateid], '*', MUST_EXIST);
@@ -94,7 +93,6 @@ if (!empty($templates)) {
             $course = get_course($template->courseid);
             $contextname = $course->fullname;
         } else {
-            // Handle the case where both categoryid and courseid are null.
             $contextname = get_string('unknown_context', 'local_setcheck');
         }
 
