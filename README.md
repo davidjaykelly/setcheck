@@ -4,6 +4,8 @@
 
 The **Setcheck** plugin for Moodle simplifies the setup of activity templates, allowing administrators and users to apply predefined settings across multiple activities, saving time and reducing errors. Templates are context-aware, meaning they’re only available in the categories, subcategories, and courses where they were created—keeping configurations consistent in relevant areas.
 
+⚠️ **WORK IN PROGRESS** - This plugin is currently in early development and not ready for production use. Features may be incomplete or change significantly.
+
 ## Features ✨
 
 - **🗂 Contextual Templates**: Create templates for Moodle activities (currently assignments, with plans to expand to other activity types) that are only available in the context (category, subcategory, or course) in which they were created.
